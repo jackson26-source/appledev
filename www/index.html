@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Citolex — speed reading, reimagined</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0a0a0f;
+    --bg-alt: #0f0f17;
+    --panel: #14141d;
+    --panel-2: #191924;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.14);
+    --text: #f2f2f7;
+    --text-dim: #9494a6;
+    --text-faint: #5c5c6e;
+    --accent: #7c6cf0;
+    --accent-2: #5ee6c7;
+    --accent-grad: linear-gradient(135deg, #7c6cf0 0%, #b06cf0 50%, #5ee6c7 100%);
+    --orp: #ff6b6b;
+    --glow-1: rgba(124,108,240,0.18);
+    --glow-2: rgba(94,230,199,0.10);
+    --focus-bg: #1c1c29;
+    --radius: 14px;
+    --radius-sm: 9px;
+    font-size: 16px;
+  }
+
+  /* THEMES — swap the color variables above; everything else (layout,
+     spacing, the RSVP mechanics) reads from these vars so it just works. */
+  body.theme-midnight{
+    --bg:#060a14; --bg-alt:#0a0f1c; --panel:#0e1526; --panel-2:#121a2f;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#eef2ff; --text-dim:#8b93b0; --text-faint:#535a75;
+    --accent:#4f8cff; --accent-2:#38d9e0;
+    --accent-grad:linear-gradient(135deg,#4f8cff 0%,#6c6cf0 50%,#38d9e0 100%);
+    --orp:#ff8a5c; --glow-1:rgba(79,140,255,0.20); --glow-2:rgba(56,217,224,0.12);
+    --focus-bg:#141e36;
+  }
+  body.theme-forest{
+    --bg:#070f0c; --bg-alt:#0b1512; --panel:#101c17; --panel-2:#14231d;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#eef7f0; --text-dim:#8fa89a; --text-faint:#53695e;
+    --accent:#4caf7d; --accent-2:#a3e635;
+    --accent-grad:linear-gradient(135deg,#4caf7d 0%,#7bc96f 50%,#a3e635 100%);
+    --orp:#ffb454; --glow-1:rgba(76,175,125,0.20); --glow-2:rgba(163,230,53,0.10);
+    --focus-bg:#162721;
+  }
+  body.theme-sunset{
+    --bg:#120a0a; --bg-alt:#180d0d; --panel:#1f1212; --panel-2:#271614;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#fdf1ec; --text-dim:#b09088; --text-faint:#6b544f;
+    --accent:#ff7a59; --accent-2:#ffd166;
+    --accent-grad:linear-gradient(135deg,#ff7a59 0%,#ff5f8f 50%,#ffd166 100%);
+    --orp:#5ee6c7; --glow-1:rgba(255,122,89,0.20); --glow-2:rgba(255,209,102,0.12);
+    --focus-bg:#2c1a1a;
+  }
+  body.theme-mono{
+    --bg:#0a0a0a; --bg-alt:#0f0f0f; --panel:#161616; --panel-2:#1c1c1c;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
+    --text:#f2f2f2; --text-dim:#9a9a9a; --text-faint:#5c5c5c;
+    --accent:#d8d8d8; --accent-2:#8a8a8a;
+    --accent-grad:linear-gradient(135deg,#e8e8e8 0%,#b0b0b0 50%,#8a8a8a 100%);
+    --orp:#ff6b6b; --glow-1:rgba(255,255,255,0.06); --glow-2:rgba(255,255,255,0.04);
+    --focus-bg:#1f1f1f;
+  }
+  body.theme-highcontrast{
+    --bg:#000000; --bg-alt:#000000; --panel:#0c0c0c; --panel-2:#141414;
+    --border:rgba(255,255,255,0.18); --border-strong:rgba(255,255,255,0.35);
+    --text:#ffffff; --text-dim:#cfcfcf; --text-faint:#8a8a8a;
+    --accent:#ffd400; --accent-2:#00e5ff;
+    --accent-grad:linear-gradient(135deg,#ffd400 0%,#ff9900 50%,#00e5ff 100%);
+    --orp:#ff3b30; --glow-1:rgba(255,212,0,0.14); --glow-2:rgba(0,229,255,0.10);
+    --focus-bg:#111111;
+  }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
+                radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%),
+                var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+    min-height: 100vh;
+    transition: background .25s, color .25s;
+  }
+  .wrap{ max-width: 1080px; margin: 0 auto; padding: 0 28px 100px; }
+
+  /* NAV */
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 26px 0; border-bottom: 1px solid var(--border);
+    margin-bottom: 56px;
+  }
+  .logo{ display:flex; align-items:center; gap:10px; }
+  .logo-mark{
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent-grad);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:15px; color:#0a0a0f;
+  }
+  .logo-word{ font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+  .nav-links{ display:flex; align-items:center; gap: 34px; }
+  .nav-links a{ color: var(--text-dim); text-decoration:none; font-size: 14px; font-weight:500; transition: color .15s; }
+  .nav-links a:hover{ color: var(--text); }
+  .nav-cta{
+    background: var(--text); color:#0a0a0f; border:none; padding: 10px 20px;
+    border-radius: 999px; font-weight:600; font-size:14px; cursor:pointer;
+  }
+
+  /* HERO */
+  .hero{ text-align:center; margin-bottom: 20px; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:7px;
+    background: var(--panel); border:1px solid var(--border-strong);
+    padding: 7px 14px; border-radius: 999px; font-size: 12.5px; color: var(--accent-2);
+    font-weight:600; margin-bottom: 22px;
+  }
+  .dot{ width:6px; height:6px; border-radius:50%; background: var(--accent-2); }
+  h1{
+    font-size: 52px; font-weight: 800; letter-spacing: -0.03em; line-height:1.08;
+    margin-bottom: 18px;
+  }
+  h1 span{
+    background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .subhead{ color: var(--text-dim); font-size: 17px; max-width: 540px; margin: 0 auto 40px; }
+
+  /* READER CARD */
+  .reader-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 8px;
+    margin-bottom: 22px;
+    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.6);
+  }
+  .reader-stage{
+    background: var(--bg-alt);
+    border-radius: 16px;
+    padding: 64px 24px;
+    display:flex; align-items:center; justify-content:center;
+    position:relative;
+    min-height: 210px;
+  }
+  .orp-guides{
+    position:absolute; top:24px; bottom:24px; left:50%; width:1px;
+    background: repeating-linear-gradient(to bottom, var(--border-strong) 0 4px, transparent 4px 10px);
+  }
+  .word-display{
+    display:flex; align-items:baseline; justify-content:center; width:100%;
+    font-size: 54px; font-weight: 700; letter-spacing: -0.01em;
+    font-variant-ligatures: none; white-space:nowrap;
+  }
+  .word-display .pre, .word-display .post{
+    flex: 1 1 0; min-width:0; white-space:nowrap; overflow:hidden;
+  }
+  .word-display .pre{ text-align:right; }
+  .word-display .post{ text-align:left; text-overflow:ellipsis; }
+  .word-display .pivot{ flex: 0 0 auto; color: var(--accent); }
+
+  .focus-btn{
+    position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:50%;
+    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text-dim);
+    display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer;
+    opacity:0.65; transition: all .15s; z-index:2;
+  }
+  .focus-btn:hover{ opacity:1; border-color: var(--accent); color: var(--text); }
+
+  .reader-controls{ padding: 22px 26px 18px; }
+  .progress-row{ display:flex; align-items:center; gap:14px; margin-bottom: 22px; }
+  .progress-track{
+    flex:1; height:6px; background: var(--panel-2); border-radius: 999px; overflow:hidden;
+    border: 1px solid var(--border);
+  }
+  .progress-fill{ height:100%; width: 0%; background: var(--accent-grad); border-radius:999px; transition: width .15s linear; }
+  .progress-label{ font-size:12.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; min-width: 92px; text-align:right; }
+
+  .transport{ display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom: 24px; }
+  .transport button{
+    background: var(--panel-2); border: 1px solid var(--border-strong); color: var(--text);
+    width:44px; height:44px; border-radius:999px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-size:16px;
+    transition: all .15s;
+  }
+  .transport button:hover{ border-color: var(--accent); }
+  .transport .play{
+    width:60px; height:60px; background: var(--accent-grad); border:none; color:#0a0a0f; font-size:20px;
+  }
+
+  .controls-grid{ display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 22px; align-items:center; }
+  .theme-select{
+    width:100%; background: var(--panel-2); border:1px solid var(--border-strong);
+    color: var(--text); padding:9px 10px; border-radius: var(--radius-sm);
+    font-size:13.5px; font-family:inherit; cursor:pointer;
+  }
+  .theme-select:focus{ outline:none; border-color: var(--accent); }
+  .slider-group label{ display:flex; justify-content:space-between; font-size:12.5px; color: var(--text-dim); margin-bottom:8px; font-weight:500; }
+  .slider-group label b{ color: var(--text); font-variant-numeric: tabular-nums; }
+  .wpm-input{
+    width: 52px; background: var(--panel-2); border: 1px solid var(--border-strong);
+    border-radius: 6px; color: var(--text); font-size: 12.5px; font-weight: 600;
+    font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
+    padding: 2px 4px; text-align: right; -moz-appearance: textfield;
+  }
+  .wpm-input:focus{ outline:none; border-color: var(--accent); }
+  .wpm-input::-webkit-inner-spin-button, .wpm-input::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type="range"]{
+    -webkit-appearance:none; width:100%; height:4px; border-radius:999px;
+    background: var(--panel-2); outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    background: var(--accent-2); cursor:pointer; border: 3px solid var(--bg-alt);
+    box-shadow: 0 0 0 1px var(--accent-2);
+  }
+  .tts-toggle{ display:flex; align-items:center; gap:10px; }
+  .tts-toggle span{ font-size:12.5px; color: var(--text-dim); font-weight:500; }
+  .switch{ position:relative; width:42px; height:24px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider-pill{
+    position:absolute; inset:0; background: var(--panel-2); border:1px solid var(--border-strong);
+    border-radius:999px; cursor:pointer; transition:.2s;
+  }
+  .slider-pill:before{
+    content:""; position:absolute; width:16px; height:16px; left:3px; top:3px;
+    background: var(--text-faint); border-radius:50%; transition:.2s;
+  }
+  .switch input:checked + .slider-pill{ background: rgba(124,108,240,0.25); border-color: var(--accent); }
+  .switch input:checked + .slider-pill:before{ transform: translateX(18px); background: var(--accent-2); }
+  .switch input:disabled + .slider-pill{ opacity:0.4; cursor:not-allowed; }
+
+  /* STATS */
+  .stats-grid{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px;
+  }
+  .stat-card{
+    background: var(--panel); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 20px;
+  }
+  .stat-label{ font-size:12px; color: var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
+  .stat-value{ font-size:26px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
+  .stat-value small{ font-size:14px; color: var(--text-dim); font-weight:500; }
+  .stat-value.accent{ color: var(--accent-2); }
+
+  /* INPUT PANEL */
+  .panel-row{ display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; margin-bottom: 22px; align-items:start; }
+  .panel{ background: var(--panel); border:1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .panel h3{ font-size:14px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; }
+  .tabs{ display:flex; gap:6px; }
+  .tab{
+    font-size:12px; color: var(--text-dim); background: var(--panel-2); border:1px solid var(--border);
+    padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:500;
+  }
+  .tab.active{ background: rgba(124,108,240,0.15); border-color: var(--accent); color: var(--accent-2); }
+  .textarea-real{
+    width:100%; min-height:120px; background: var(--bg-alt); border:1px solid var(--border);
+    border-radius: var(--radius-sm); padding:14px 16px; font-size:13.5px; color: var(--text);
+    line-height:1.7; font-family:'Inter', sans-serif; resize:vertical;
+  }
+  .textarea-real:focus{ outline:none; border-color: var(--accent); }
+  .tab-panel{ margin-bottom:14px; }
+  .file-input{
+    width:100%; background: var(--bg-alt); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding:10px 12px; color: var(--text-dim); font-size:12.5px;
+  }
+  .url-row{ display:flex; gap:8px; }
+  .url-input{
+    flex:1; background: var(--bg-alt); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding:10px 12px; color: var(--text); font-size:13.5px;
+  }
+  .url-input:focus{ outline:none; border-color: var(--accent); }
+  .action-btn{
+    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text); font-size:12.5px;
+    padding:0 16px; border-radius: var(--radius-sm); cursor:pointer; font-weight:500; white-space:nowrap;
+  }
+  .action-btn:hover{ border-color: var(--accent); }
+  .hint{ font-size:12px; color: var(--text-faint); margin-top:8px; line-height:1.5; }
+  .load-btn{
+    width:100%; margin-top:6px; padding:11px; border-radius: var(--radius-sm); border:1px solid var(--border-strong);
+    background: var(--panel-2); color: var(--text); font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .load-btn:hover{ border-color: var(--accent); }
+  .status-msg{ font-size:12px; color: var(--accent-2); margin-top:10px; min-height:14px; }
+  .voice-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); gap:12px; }
+  .voice-row:last-child{ border-bottom:none; }
+  .voice-row span:first-child{ font-size:13.5px; color: var(--text-dim); flex-shrink:0; }
+  .voice-select{
+    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text);
+    border-radius:8px; padding:7px 10px; font-size:12.5px; max-width:170px;
+  }
+  .rate-wrap{ display:flex; align-items:center; gap:10px; }
+  .rate-wrap input[type="range"]{ width:100px; }
+  .rate-wrap span{ font-size:12.5px; color: var(--text); font-variant-numeric: tabular-nums; min-width:34px; }
+
+  .name-note{
+    text-align:center; color: var(--text-faint); font-size:12.5px; margin-top: 30px;
+  }
+
+  /* FOCUS / READ MODE — solid precomputed --focus-bg per theme (defined
+     above, right next to each theme's other colors) as the base, with the
+     same soft radial-gradient glow used on the main page layered on top for
+     a bit of depth/fade instead of a totally flat color. Deliberately NOT
+     using color-mix() here: it silently failed in testing (unsupported or
+     some other issue), and a plain hex value can't have that problem. */
+  .focus-overlay{
+    position:fixed; inset:0; z-index:1000;
+    background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
+                radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%),
+                var(--focus-bg);
+    display:none; align-items:center; justify-content:center; flex-direction:column;
+    cursor:pointer;
+  }
+  .focus-overlay.active{ display:flex; }
+  /* Explicitly re-assert size + theme background once this element becomes
+     the actual fullscreen element, so nothing paints behind it. Each
+     vendor-prefixed pseudo-class needs its OWN rule block — combining them
+     in one comma-separated selector makes the whole rule invalid (and get
+     dropped entirely) in browsers that don't recognize one of the prefixes. */
+  .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
+  .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
+  .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
+  .focus-overlay::backdrop{ background: var(--focus-bg) !important; }
+  html:fullscreen, body:fullscreen{ background: var(--focus-bg) !important; }
+  html:-webkit-full-screen, body:-webkit-full-screen{ background: var(--focus-bg) !important; }
+  .focus-overlay::-webkit-backdrop{ background: var(--focus-bg); }
+  .focus-word-display{
+    display:flex; align-items:baseline; justify-content:center; width:82%;
+    font-size: clamp(40px, 9vw, 128px); font-weight: 700; letter-spacing: -0.01em;
+    white-space:nowrap; cursor:default;
+  }
+  .focus-word-display .pre, .focus-word-display .post{
+    flex: 1 1 0; min-width:0; white-space:nowrap; overflow:hidden;
+  }
+  .focus-word-display .pre{ text-align:right; }
+  .focus-word-display .post{ text-align:left; }
+  .focus-word-display .pivot{ flex: 0 0 auto; color: var(--accent); }
+  .focus-exit{
+    position:absolute; top:26px; right:30px; width:38px; height:38px; border-radius:50%;
+    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text-dim);
+    display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer;
+    opacity:0.55; transition: opacity .15s;
+  }
+  .focus-exit:hover{ opacity:1; }
+  .focus-hint{
+    position:absolute; bottom:30px; left:50%; transform:translateX(-50%);
+    font-size:12px; color: var(--text-faint); cursor:default; white-space:nowrap;
+  }
+
+  @media (max-width: 720px){
+    h1{ font-size:36px; }
+    .stats-grid{ grid-template-columns: repeat(2,1fr); }
+    .panel-row{ grid-template-columns: 1fr; }
+    .controls-grid{ grid-template-columns:1fr; gap:16px; }
+    .nav-links{ display:none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav>
+    <div class="logo">
+      <div class="logo-mark">C</div>
+      <div class="logo-word">citolex</div>
+    </div>
+    <div class="nav-links">
+      <a href="#">How it works</a>
+      <a href="#">Voices</a>
+      <a href="#">Pricing</a>
+    </div>
+    <button class="nav-cta" id="startReadingBtn">Start reading</button>
+  </nav>
+
+  <div class="hero">
+    <div class="eyebrow"><span class="dot"></span> RSVP reading + natural voice, in one flow</div>
+    <h1>Read at the <span>speed of thought.</span></h1>
+    <p class="subhead">Paste any text, article, or file. Citolex flashes it word by word — or reads it aloud — so you finish in a fraction of the time.</p>
+  </div>
+
+  <div class="reader-card">
+    <div class="reader-stage">
+      <button class="focus-btn" id="focusBtn" title="Focus mode">⛶</button>
+      <div class="orp-guides"></div>
+      <div class="word-display" id="wordDisplay"><span class="pre" id="prePart"></span><span class="pivot" id="pivotPart"></span><span class="post" id="postPart"></span></div>
+    </div>
+    <div class="reader-controls">
+      <div class="progress-row">
+        <span class="progress-label" id="wordsRead">0 words</span>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="timeLeft">0:00 left</span>
+      </div>
+
+      <div class="transport">
+        <button id="restartBtn" title="Restart">↺</button>
+        <button id="backBtn" title="Back 10 words">⏮</button>
+        <button class="play" id="playBtn" title="Play/Pause">▶</button>
+        <button id="forwardBtn" title="Forward 10 words">⏭</button>
+      </div>
+
+      <div class="controls-grid">
+        <div class="slider-group">
+          <label>Speed <b><input type="number" id="wpmVal" class="wpm-input" min="100" max="900" step="10" value="420"> wpm</b></label>
+          <input type="range" min="100" max="900" step="10" value="420" id="wpmSlider">
+        </div>
+        <div class="slider-group">
+          <label>Font size <b><input type="number" id="fontVal" class="wpm-input" min="10" max="88" step="1" value="54"> px</b></label>
+          <input type="range" min="10" max="88" step="1" value="54" id="fontSlider">
+        </div>
+        <div class="slider-group">
+          <label>Theme</label>
+          <select id="themeSelect" class="theme-select">
+            <option value="default">Violet (default)</option>
+            <option value="midnight">Midnight Blue</option>
+            <option value="forest">Forest</option>
+            <option value="sunset">Sunset</option>
+            <option value="mono">Mono</option>
+            <option value="highcontrast">High Contrast</option>
+          </select>
+        </div>
+        <div class="tts-toggle">
+          <span>Read aloud</span>
+          <label class="switch">
+            <input type="checkbox" id="ttsToggle">
+            <span class="slider-pill"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:22px;">
+    <h3>Source
+      <div class="tabs" id="sourceTabs">
+        <div class="tab active" data-tab="paste">Paste</div>
+        <div class="tab" data-tab="file">File</div>
+        <div class="tab" data-tab="url">URL</div>
+      </div>
+    </h3>
+
+    <div class="tab-panel" data-panel="paste">
+      <textarea class="textarea-real" id="pasteInput" placeholder="Paste an article, essay, or any text here..."></textarea>
+    </div>
+    <div class="tab-panel" data-panel="file" style="display:none">
+      <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.pdf,.docx,.epub,text/plain,application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      <p class="hint">Accepts .txt, .md, .pdf, .docx, and .epub — everything is parsed right in your browser, nothing is uploaded anywhere.</p>
+    </div>
+    <div class="tab-panel" data-panel="url" style="display:none">
+      <div class="url-row">
+        <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/article">
+        <button class="action-btn" id="urlFetchBtn">Fetch</button>
+      </div>
+      <p class="hint">Only works for pages that allow cross-origin requests — most sites block this from a browser. Paste the text instead if it fails.</p>
+    </div>
+
+    <button class="load-btn" id="loadTextBtn">Load into reader</button>
+    <p class="status-msg" id="sourceStatus"></p>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Current pace</div>
+      <div class="stat-value accent"><span id="paceStat">420</span> <small>wpm</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Time saved</div>
+      <div class="stat-value"><span id="timeSavedStat">0.0</span> <small>min</small></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Words read</div>
+      <div class="stat-value"><span id="wordsReadStat">0 / 0</span></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Sessions today</div>
+      <div class="stat-value"><span id="sessionsStat">0</span></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:22px;">
+    <h3>Voice + playback</h3>
+    <div class="voice-row">
+      <span>Voice</span>
+      <select id="voiceSelect" class="voice-select"></select>
+    </div>
+    <div class="voice-row">
+      <span>Playback speed</span>
+      <div class="rate-wrap">
+        <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
+        <span id="rateVal">1.0×</span>
+      </div>
+    </div>
+    <div class="voice-row">
+      <span>Sync with word flash</span>
+      <label class="switch"><input type="checkbox" id="syncToggle" checked><span class="slider-pill"></span></label>
+    </div>
+    <div class="voice-row">
+      <span>Auto-pause on punctuation</span>
+      <label class="switch"><input type="checkbox" id="punctToggle" checked><span class="slider-pill"></span></label>
+    </div>
+  </div>
+
+  <p class="name-note">citolex.com</p>
+
+</div>
+
+<div class="focus-overlay" id="focusOverlay">
+  <button class="focus-exit" id="focusExitBtn" title="Exit focus mode (Esc)">✕</button>
+  <div class="focus-word-display" id="focusWordDisplay">
+    <span class="pre" id="focusPrePart"></span><span class="pivot" id="focusPivotPart"></span><span class="post" id="focusPostPart"></span>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  async function extractPdfText(arrayBuffer){
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(it => it.str).join(' ') + '\n\n';
+    }
+    return text;
+  }
+
+  async function extractDocxText(arrayBuffer){
+    const result = await mammoth.extractRawText({ arrayBuffer });
+    return result.value;
+  }
+
+  function stripMarkup(xml){
+    return xml
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  async function extractEpubText(arrayBuffer){
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const containerFile = zip.file('META-INF/container.xml');
+    if (!containerFile) throw new Error('not a valid epub');
+    const containerXml = await containerFile.async('string');
+    const parser = new DOMParser();
+    const containerDoc = parser.parseFromString(containerXml, 'application/xml');
+    const opfPath = containerDoc.querySelector('rootfile').getAttribute('full-path');
+    const opfDir = opfPath.includes('/') ? opfPath.split('/').slice(0, -1).join('/') : '';
+    const opfXml = await zip.file(opfPath).async('string');
+    const opfDoc = parser.parseFromString(opfXml, 'application/xml');
+
+    const manifest = {};
+    opfDoc.querySelectorAll('manifest > item').forEach(item => {
+      manifest[item.getAttribute('id')] = item.getAttribute('href');
+    });
+    const spineIds = Array.from(opfDoc.querySelectorAll('spine > itemref')).map(el => el.getAttribute('idref'));
+
+    let text = '';
+    for (const id of spineIds) {
+      const href = manifest[id];
+      if (!href) continue;
+      const fullPath = opfDir ? (opfDir + '/' + href) : href;
+      const file = zip.file(fullPath) || zip.file(decodeURIComponent(fullPath));
+      if (!file) continue;
+      const xhtml = await file.async('string');
+      text += stripMarkup(xhtml) + '\n\n';
+    }
+    return text;
+  }
+
+  const wordEl = document.getElementById('wordDisplay');
+  const prePart = document.getElementById('prePart');
+  const pivotPart = document.getElementById('pivotPart');
+  const postPart = document.getElementById('postPart');
+  const focusPrePart = document.getElementById('focusPrePart');
+  const focusPivotPart = document.getElementById('focusPivotPart');
+  const focusPostPart = document.getElementById('focusPostPart');
+  const focusWordDisplay = document.getElementById('focusWordDisplay');
+  const focusBtn = document.getElementById('focusBtn');
+  const focusOverlay = document.getElementById('focusOverlay');
+  const focusExitBtn = document.getElementById('focusExitBtn');
+  const playBtn = document.getElementById('playBtn');
+  const restartBtn = document.getElementById('restartBtn');
+  const backBtn = document.getElementById('backBtn');
+  const forwardBtn = document.getElementById('forwardBtn');
+  const wpmVal = document.getElementById('wpmVal');
+  const wpmSlider = document.getElementById('wpmSlider');
+  function getWpm(){
+    const v = parseInt(wpmVal.value, 10);
+    return isNaN(v) ? 420 : Math.max(100, Math.min(900, v));
+  }
+  const fontSlider = document.getElementById('fontSlider');
+  const fontVal = document.getElementById('fontVal');
+  function getFontSize(){
+    const v = parseInt(fontVal.value, 10);
+    return isNaN(v) ? 54 : Math.max(10, Math.min(88, v));
+  }
+  const themeSelect = document.getElementById('themeSelect');
+  const progressFill = document.getElementById('progressFill');
+  const wordsRead = document.getElementById('wordsRead');
+  const timeLeft = document.getElementById('timeLeft');
+  const ttsToggle = document.getElementById('ttsToggle');
+  const syncToggle = document.getElementById('syncToggle');
+  const punctToggle = document.getElementById('punctToggle');
+  const voiceSelect = document.getElementById('voiceSelect');
+  const rateSlider = document.getElementById('rateSlider');
+  const rateVal = document.getElementById('rateVal');
+
+  const pasteInput = document.getElementById('pasteInput');
+  const fileInput = document.getElementById('fileInput');
+  const urlInput = document.getElementById('urlInput');
+  const urlFetchBtn = document.getElementById('urlFetchBtn');
+  const loadTextBtn = document.getElementById('loadTextBtn');
+  const sourceStatus = document.getElementById('sourceStatus');
+
+  const paceStat = document.getElementById('paceStat');
+  const timeSavedStat = document.getElementById('timeSavedStat');
+  const wordsReadStat = document.getElementById('wordsReadStat');
+  const sessionsStat = document.getElementById('sessionsStat');
+
+  let words = [];
+  let idx = 0;
+  let playing = false;
+  let timer = null;
+  let fileTextContent = '';
+  let urlFetchedText = '';
+
+  /* ---- native app bridge (no-ops / falls through cleanly on the plain web
+     version at citolex.com — only active when running inside the Capacitor
+     iOS shell, where window.Capacitor is injected automatically) ---- */
+  const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+  const NativeTts = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.NativeTts : null;
+  const SharedText = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.SharedText : null;
+  let nativeVoices = [];
+
+  const ttsSupported = isNativeApp ? !!NativeTts : ('speechSynthesis' in window);
+  if (!ttsSupported) {
+    ttsToggle.disabled = true;
+    document.querySelector('.tts-toggle span').textContent = 'Read aloud (not supported here)';
+  }
+
+  function pivotIndex(word){
+    const len = word.length;
+    if (len <= 1) return 0;
+    if (len <= 5) return 1;
+    if (len <= 9) return 2;
+    return 3;
+  }
+  function renderWord(word){
+    word = word || '';
+    const i = pivotIndex(word);
+    const pre = word.slice(0, i);
+    const pivot = word[i] || '';
+    const post = word.slice(i + 1);
+    prePart.textContent = pre;
+    pivotPart.textContent = pivot;
+    postPart.textContent = post;
+    focusPrePart.textContent = pre;
+    focusPivotPart.textContent = pivot;
+    focusPostPart.textContent = post;
+  }
+
+  function updateStats(){
+    const total = words.length;
+    const pct = total ? Math.min(100, Math.round((idx / total) * 100)) : 0;
+    progressFill.style.width = pct + '%';
+    wordsRead.textContent = idx + ' words';
+    const wpm = getWpm();
+    const remaining = Math.max(0, total - idx);
+    const secsLeft = Math.max(0, Math.round((remaining / wpm) * 60));
+    const m = Math.floor(secsLeft / 60), s = secsLeft % 60;
+    timeLeft.textContent = m + ':' + String(s).padStart(2, '0') + ' left';
+    paceStat.textContent = wpm;
+    const normalMin = total / 200;
+    const fastMin = wpm ? total / wpm : 0;
+    const savedMin = Math.max(0, normalMin - fastMin);
+    timeSavedStat.textContent = savedMin.toFixed(1);
+    wordsReadStat.textContent = idx + ' / ' + total;
+  }
+
+  function recordCompletion(){
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const key = 'citolex_sessions_' + today;
+      const n = parseInt(localStorage.getItem(key) || '0', 10) + 1;
+      localStorage.setItem(key, String(n));
+      sessionsStat.textContent = n;
+    } catch (e) { /* localStorage unavailable */ }
+  }
+  (function initSessions(){
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      sessionsStat.textContent = parseInt(localStorage.getItem('citolex_sessions_' + today) || '0', 10);
+    } catch (e) { sessionsStat.textContent = '0'; }
+  })();
+
+  function setPlayingUI(isPlaying){
+    playing = isPlaying;
+    playBtn.textContent = isPlaying ? '❚❚' : '▶';
+  }
+
+  function stopAll(){
+    clearTimeout(timer);
+    if (isNativeApp && NativeTts) { NativeTts.stop().catch(()=>{}); }
+    else if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e){} }
+    setPlayingUI(false);
+  }
+
+  function loadWords(text){
+    stopAll();
+    words = text.trim().split(/\s+/).filter(Boolean);
+    idx = 0;
+    renderWord(words[0] || '—');
+    updateStats();
+  }
+
+  /* ---- flash-only playback ---- */
+  function tick(){
+    if (idx >= words.length) { setPlayingUI(false); recordCompletion(); return; }
+    renderWord(words[idx]);
+    updateStats();
+    const word = words[idx];
+    idx++;
+    if (idx >= words.length) {
+      timer = setTimeout(() => { setPlayingUI(false); updateStats(); recordCompletion(); }, 60000 / getWpm());
+      return;
+    }
+    const wpm = getWpm();
+    let delay = 60000 / wpm;
+    if (punctToggle.checked) {
+      if (/[.!?]$/.test(word)) delay *= 2.2;
+      else if (/[,;:]$/.test(word)) delay *= 1.5;
+    }
+    timer = setTimeout(() => { if (playing) tick(); }, delay);
+  }
+
+  /* ---- text-to-speech playback (native) ---- */
+  let nativeBoundaryListener = null;
+  let nativeFinishListener = null;
+  async function startSpeakingNative(){
+    const baseIdx = idx;
+    const remaining = words.slice(baseIdx);
+    if (remaining.length === 0) return;
+    const text = remaining.join(' ');
+    const offsets = [];
+    let pos = 0;
+    remaining.forEach(w => { offsets.push(pos); pos += w.length + 1; });
+
+    if (nativeBoundaryListener) { nativeBoundaryListener.remove(); nativeBoundaryListener = null; }
+    if (nativeFinishListener) { nativeFinishListener.remove(); nativeFinishListener = null; }
+
+    nativeBoundaryListener = await NativeTts.addListener('boundary', (e) => {
+      let wi = 0;
+      for (let i = 0; i < offsets.length; i++) {
+        if (offsets[i] <= e.charIndex) wi = i; else break;
+      }
+      idx = baseIdx + wi;
+      if (syncToggle.checked) renderWord(words[idx]);
+      updateStats();
+    });
+    nativeFinishListener = await NativeTts.addListener('finish', () => {
+      if (!playing) return;
+      idx = words.length;
+      setPlayingUI(false);
+      updateStats();
+      recordCompletion();
+    });
+
+    const voiceId = voiceSelect.value && nativeVoices[parseInt(voiceSelect.value, 10)]
+      ? nativeVoices[parseInt(voiceSelect.value, 10)].identifier
+      : undefined;
+    const wpm = getWpm();
+    const rateMul = parseFloat(rateSlider.value);
+    NativeTts.speak({ text, rate: (wpm / 180) * rateMul, voiceId }).catch(() => { setPlayingUI(false); });
+  }
+
+  /* ---- text-to-speech playback (web) ---- */
+  function startSpeaking(){
+    if (!ttsSupported || words.length === 0) return;
+    if (isNativeApp && NativeTts) { startSpeakingNative(); return; }
+    try { speechSynthesis.cancel(); } catch(e){}
+    const baseIdx = idx;
+    const remaining = words.slice(baseIdx);
+    if (remaining.length === 0) return;
+    const text = remaining.join(' ');
+    const offsets = [];
+    let pos = 0;
+    remaining.forEach(w => { offsets.push(pos); pos += w.length + 1; });
+
+    const utter = new SpeechSynthesisUtterance(text);
+    const voices = speechSynthesis.getVoices();
+    const vIdx = parseInt(voiceSelect.value, 10);
+    if (voices[vIdx]) utter.voice = voices[vIdx];
+    const wpm = getWpm();
+    const rateMul = parseFloat(rateSlider.value);
+    utter.rate = Math.min(10, Math.max(0.1, (wpm / 180) * rateMul));
+
+    utter.onboundary = (e) => {
+      if (e.name && e.name !== 'word') return;
+      let wi = 0;
+      for (let i = 0; i < offsets.length; i++) {
+        if (offsets[i] <= e.charIndex) wi = i; else break;
+      }
+      idx = baseIdx + wi;
+      if (syncToggle.checked) renderWord(words[idx]);
+      updateStats();
+    };
+    utter.onend = () => {
+      if (!playing) return;
+      idx = words.length;
+      setPlayingUI(false);
+      updateStats();
+      recordCompletion();
+    };
+    utter.onerror = () => { setPlayingUI(false); };
+
+    speechSynthesis.speak(utter);
+  }
+
+  /* ---- transport ---- */
+  playBtn.addEventListener('click', () => {
+    if (words.length === 0) return;
+    if (!playing) {
+      if (ttsToggle.checked && ttsSupported) {
+        if (isNativeApp && NativeTts) {
+          if (idx >= words.length) idx = 0;
+          startSpeaking();
+        } else if (speechSynthesis.paused) {
+          speechSynthesis.resume();
+        } else {
+          if (idx >= words.length) idx = 0;
+          startSpeaking();
+        }
+      } else {
+        if (idx >= words.length) idx = 0;
+        setPlayingUI(true);
+        tick();
+        return;
+      }
+      setPlayingUI(true);
+    } else {
+      setPlayingUI(false);
+      if (ttsToggle.checked && ttsSupported) {
+        if (isNativeApp && NativeTts) { NativeTts.pause().catch(()=>{}); }
+        else { try { speechSynthesis.pause(); } catch(e){} }
+      } else {
+        clearTimeout(timer);
+      }
+    }
+  });
+
+  function seekTo(newIdx){
+    if (words.length === 0) return;
+    newIdx = Math.max(0, Math.min(words.length - 1, newIdx));
+    const wasPlaying = playing;
+    clearTimeout(timer);
+    if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e){} }
+    idx = newIdx;
+    renderWord(words[idx]);
+    updateStats();
+    if (wasPlaying) {
+      setPlayingUI(true);
+      if (ttsToggle.checked && ttsSupported) startSpeaking();
+      else tick();
+    }
+  }
+  restartBtn.addEventListener('click', () => seekTo(0));
+  backBtn.addEventListener('click', () => seekTo(idx - 10));
+  forwardBtn.addEventListener('click', () => seekTo(idx + 10));
+
+  ttsToggle.addEventListener('change', () => {
+    const wasPlaying = playing;
+    stopAll();
+    if (wasPlaying) playBtn.click();
+  });
+
+  wpmSlider.addEventListener('input', () => {
+    wpmVal.value = wpmSlider.value;
+    updateStats();
+  });
+  wpmSlider.addEventListener('change', () => {
+    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
+  });
+
+  wpmVal.addEventListener('input', () => {
+    const v = parseInt(wpmVal.value, 10);
+    if (!isNaN(v)) wpmSlider.value = Math.max(100, Math.min(900, v));
+    updateStats();
+  });
+  function commitWpmInput(){
+    const v = getWpm();
+    wpmVal.value = v;
+    wpmSlider.value = v;
+    updateStats();
+    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
+  }
+  wpmVal.addEventListener('change', commitWpmInput);
+  wpmVal.addEventListener('keydown', (e) => { if (e.key === 'Enter') wpmVal.blur(); });
+
+  // The fullscreen focus view scales up from the same slider (roughly 1.8x,
+  // capped) instead of using its own separate, disconnected size — so
+  // dragging Font size actually changes what you see in focus mode too.
+  function applyFontSize(px){
+    wordEl.style.fontSize = px + 'px';
+    focusWordDisplay.style.fontSize = Math.min(200, Math.round(px * 1.8)) + 'px';
+  }
+  fontSlider.addEventListener('input', () => {
+    fontVal.value = fontSlider.value;
+    applyFontSize(fontSlider.value);
+    try { localStorage.setItem('citolex_font_size', fontSlider.value); } catch(e){}
+  });
+  fontVal.addEventListener('input', () => {
+    const v = parseInt(fontVal.value, 10);
+    if (!isNaN(v)) fontSlider.value = Math.max(10, Math.min(88, v));
+    applyFontSize(fontSlider.value);
+  });
+  function commitFontInput(){
+    const v = getFontSize();
+    fontVal.value = v;
+    fontSlider.value = v;
+    applyFontSize(v);
+    try { localStorage.setItem('citolex_font_size', v); } catch(e){}
+  }
+  fontVal.addEventListener('change', commitFontInput);
+  fontVal.addEventListener('keydown', (e) => { if (e.key === 'Enter') fontVal.blur(); });
+
+  // Real OS-level fullscreen apparently doesn't reliably carry inherited CSS
+  // custom properties through to the fullscreened element in every browser
+  // (the overlay was falling back to black/white regardless of theme) — so
+  // instead of trusting var(--bg)/var(--orp) to resolve correctly inside the
+  // fullscreen context, resolve them ourselves and set them as direct inline
+  // styles, which can't be affected by whatever the fullscreen rendering
+  // context does to inheritance.
+  function syncFocusColors(){
+    const cs = getComputedStyle(document.body);
+    // --focus-bg is a precomputed, plain hex value per theme (no color-mix,
+    // no runtime math) — getComputedStyle on a custom property returns the
+    // literal authored string (e.g. "#0a0a0d"), not a browser-resolved
+    // rgb(...), which is exactly what we want here: just use it as-is.
+    const focusBg = cs.getPropertyValue('--focus-bg').trim();
+    const accent = cs.getPropertyValue('--accent').trim();
+    const text = cs.getPropertyValue('--text').trim();
+    const faint = cs.getPropertyValue('--text-faint').trim();
+    // Only the overlay itself gets the inline background — NOT
+    // document.documentElement / document.body. This function runs on every
+    // theme change (via applyTheme, including page load), so setting the
+    // background on html/body here was leaking the fullscreen focus color
+    // into the regular page background at all times, not just during
+    // fullscreen. The CSS rules below (.focus-overlay:fullscreen,
+    // html:fullscreen/body:fullscreen, ::backdrop) already scope
+    // var(--focus-bg) correctly to only when fullscreen is actually active.
+    focusOverlay.style.background = focusBg;
+    focusPivotPart.style.color = accent;
+    focusWordDisplay.style.color = text;
+    const exitBtn = document.getElementById('focusExitBtn');
+    if (exitBtn) exitBtn.style.color = faint;
+  }
+
+  function applyTheme(name){
+    document.body.className = document.body.className.replace(/theme-\S+/g, '').trim();
+    if (name && name !== 'default') document.body.classList.add('theme-' + name);
+    syncFocusColors();
+  }
+  themeSelect.addEventListener('change', () => {
+    applyTheme(themeSelect.value);
+    try { localStorage.setItem('citolex_theme', themeSelect.value); } catch(e){}
+  });
+  (function initAppearance(){
+    try {
+      const savedFont = localStorage.getItem('citolex_font_size');
+      if (savedFont) { fontSlider.value = savedFont; fontVal.value = savedFont; }
+      const savedTheme = localStorage.getItem('citolex_theme');
+      if (savedTheme) { themeSelect.value = savedTheme; }
+    } catch(e){}
+    applyFontSize(fontSlider.value);
+    applyTheme(themeSelect.value);
+  })();
+
+  rateSlider.addEventListener('input', () => {
+    rateVal.textContent = parseFloat(rateSlider.value).toFixed(1) + '×';
+  });
+  rateSlider.addEventListener('change', () => {
+    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
+  });
+
+  voiceSelect.addEventListener('change', () => {
+    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
+  });
+
+  /* ---- voices ---- */
+  async function populateNativeVoices(){
+    try {
+      const res = await NativeTts.listVoices();
+      nativeVoices = res.voices || [];
+      voiceSelect.innerHTML = '';
+      nativeVoices.forEach((v, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = v.name + ' (' + v.language + ')';
+        voiceSelect.appendChild(opt);
+      });
+    } catch (e) { /* leave select empty, native TTS still works with default voice */ }
+  }
+  function populateVoices(){
+    if (!ttsSupported) return;
+    if (isNativeApp && NativeTts) { populateNativeVoices(); return; }
+    const voices = speechSynthesis.getVoices();
+    if (!voices.length) return;
+    voiceSelect.innerHTML = '';
+    voices.forEach((v, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = v.name + ' (' + v.lang + ')' + (v.default ? ' — default' : '');
+      voiceSelect.appendChild(opt);
+    });
+  }
+  if (ttsSupported) {
+    populateVoices();
+    if (!isNativeApp) speechSynthesis.onvoiceschanged = populateVoices;
+  } else {
+    voiceSelect.innerHTML = '<option>Not supported</option>';
+  }
+
+  /* ---- source tabs ---- */
+  document.querySelectorAll('#sourceTabs .tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('#sourceTabs .tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      const name = tab.dataset.tab;
+      document.querySelectorAll('.tab-panel').forEach(p => {
+        p.style.display = (p.dataset.panel === name) ? 'block' : 'none';
+      });
+      sourceStatus.textContent = '';
+    });
+  });
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const name = file.name.toLowerCase();
+    sourceStatus.textContent = 'Reading ' + file.name + '…';
+    try {
+      if (name.endsWith('.txt') || name.endsWith('.md')) {
+        fileTextContent = await file.text();
+      } else if (name.endsWith('.pdf')) {
+        fileTextContent = await extractPdfText(await file.arrayBuffer());
+      } else if (name.endsWith('.docx')) {
+        fileTextContent = await extractDocxText(await file.arrayBuffer());
+      } else if (name.endsWith('.epub')) {
+        fileTextContent = await extractEpubText(await file.arrayBuffer());
+      } else {
+        sourceStatus.textContent = 'Unsupported file type — try .txt, .md, .pdf, .docx, or .epub.';
+        return;
+      }
+      const n = fileTextContent.trim().split(/\s+/).filter(Boolean).length;
+      if (!n) { sourceStatus.textContent = "Couldn't find any readable text in that file."; return; }
+      sourceStatus.textContent = 'Loaded ' + file.name + ' (' + n + ' words) — click "Load into reader".';
+    } catch (e) {
+      sourceStatus.textContent = 'Could not read that file (' + (e && e.message ? e.message : 'parsing error') + ').';
+    }
+  });
+
+  urlFetchBtn.addEventListener('click', async () => {
+    const url = urlInput.value.trim();
+    if (!url) { sourceStatus.textContent = 'Enter a URL first.'; return; }
+    sourceStatus.textContent = 'Fetching…';
+    try {
+      const res = await fetch(url);
+      const html = await res.text();
+      const text = html
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      urlFetchedText = text;
+      const n = text.split(' ').filter(Boolean).length;
+      sourceStatus.textContent = 'Fetched ~' + n + ' words — click "Load into reader".';
+    } catch (e) {
+      sourceStatus.textContent = "Couldn't fetch that URL — most sites block cross-origin requests from a browser. Paste the text instead.";
+    }
+  });
+
+  loadTextBtn.addEventListener('click', () => {
+    const active = document.querySelector('#sourceTabs .tab.active').dataset.tab;
+    let text = '';
+    if (active === 'paste') text = pasteInput.value;
+    else if (active === 'file') text = fileTextContent;
+    else if (active === 'url') text = urlFetchedText;
+    text = (text || '').trim();
+    if (!text) { sourceStatus.textContent = 'Nothing to load yet.'; return; }
+    loadWords(text);
+    sourceStatus.textContent = 'Loaded ' + words.length + ' words into the reader.';
+  });
+
+  document.getElementById('startReadingBtn').addEventListener('click', () => {
+    document.querySelector('.reader-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
+  /* ---- focus / read mode ---- */
+  function enterFocusMode(){
+    syncFocusColors();
+    focusOverlay.classList.add('active');
+    // Fullscreen the whole document (the standard, best-supported target)
+    // rather than a single div — html, body, and the overlay all have the
+    // theme color painted on them directly (see syncFocusColors above), so
+    // whichever one the browser treats as "the fullscreen element" for
+    // backdrop purposes, it's covered.
+    const el = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (req) { try { req.call(el).catch(() => {}); } catch(e){} }
+  }
+  function exitFocusMode(){
+    focusOverlay.classList.remove('active');
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      const exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) { try { exit.call(document).catch(() => {}); } catch(e){} }
+    }
+  }
+  focusBtn.addEventListener('click', enterFocusMode);
+  focusExitBtn.addEventListener('click', (e) => { e.stopPropagation(); exitFocusMode(); });
+  focusOverlay.addEventListener('click', (e) => {
+    if (e.target === focusExitBtn) return;
+    playBtn.click();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (!focusOverlay.classList.contains('active')) return;
+    if (e.key === 'Escape') { exitFocusMode(); }
+    else if (e.key === ' ') { e.preventDefault(); playBtn.click(); }
+  });
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) focusOverlay.classList.remove('active');
+  });
+  document.addEventListener('webkitfullscreenchange', () => {
+    if (!document.webkitFullscreenElement) focusOverlay.classList.remove('active');
+  });
+
+  /* ---- initial load ---- */
+  const defaultText = "Citolex flashes text one word at a time so your eyes never have to move across a line, letting you read faster. Turn on read aloud and a natural voice keeps pace, word for word, so you can listen instead of look. The optimal recognition point stays centered in red so recognition is instant and effortless. Paste your own article, upload a text file, or try a link above to see how fast you can go.";
+  pasteInput.value = defaultText;
+  loadWords(defaultText);
+
+  /* ---- incoming text from the "Read in Citolex" share sheet extension ----
+     The extension writes to a shared App Group container; we just poll it
+     whenever the app becomes active, since that covers both a cold launch
+     from the share sheet and returning to an already-open app. */
+  async function checkForSharedText(){
+    if (!isNativeApp || !SharedText) return;
+    try {
+      const res = await SharedText.consume();
+      if (res && res.text) {
+        pasteInput.value = res.text;
+        document.querySelector('#sourceTabs .tab[data-tab="paste"]').click();
+        loadWords(res.text);
+        sourceStatus.textContent = 'Loaded shared text (' + words.length + ' words) — ready to read.';
+        document.querySelector('.reader-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    } catch (e) { /* no shared text waiting, nothing to do */ }
+  }
+  if (isNativeApp) {
+    checkForSharedText();
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') checkForSharedText();
+    });
+  }
+</script>
+
+</body>
+</html>

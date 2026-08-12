@@ -1,0 +1,19 @@
+{
+  "name": "citolex-app",
+  "version": "1.0.0",
+  "description": "Citolex speed-reading app — Capacitor iOS shell around the citolex.com web app",
+  "private": true,
+  "scripts": {
+    "sync": "npx cap sync ios",
+    "open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0",
+    "@capacitor/share": "^7.0.0",
+    "@capacitor/filesystem": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}
