@@ -955,6 +955,18 @@
     let pos = 0;
     remaining.forEach(w => { offsets.push(pos); pos += w.length + 1; });
 
+    // Stop whatever's currently speaking before starting the next utterance.
+    // AVSpeechSynthesizer does NOT interrupt an in-progress utterance when
+    // speak() is called again — it just queues the new one to play *after*
+    // the current one finishes. That's exactly what made changing WPM (or
+    // voice) mid-playback "bug out": the old and new utterances both ended
+    // up playing back to back while the app's own state (currentCall on the
+    // native side, playing/idx here) only ever tracked one of them, so the
+    // UI went out of sync with what was actually still speaking and the
+    // play button stopped doing anything useful. speechSynthesis.cancel()
+    // already did this on the web path (below) — native needs the same.
+    try { await NativeTts.stop(); } catch (e) {}
+
     if (nativeBoundaryListener) { nativeBoundaryListener.remove(); nativeBoundaryListener = null; }
     if (nativeFinishListener) { nativeFinishListener.remove(); nativeFinishListener = null; }
 
@@ -980,7 +992,16 @@
       : undefined;
     const wpm = getWpm();
     const rateMul = parseFloat(rateSlider.value);
-    NativeTts.speak({ text, rate: (wpm / 180) * rateMul, voiceId }).catch(() => { setPlayingUI(false); });
+    // AVSpeechSynthesizer's rate tops out at 1.0 (roughly 2x its own "normal"
+    // pace of 0.5) — a much lower ceiling than the web Speech API's, which
+    // goes up to 10x. Dividing by the same baseline (180) the web path uses
+    // meant the app's own *default* WPM (420) already exceeded that ceiling,
+    // so native read-aloud was pinned at max speed from the very first play,
+    // not scaling up gradually. Using a higher baseline (300) means the
+    // default and most of the slider's range map to an audibly natural
+    // scaling instead of instantly maxing out; only the very fastest settings
+    // (600+ wpm) still hit the hardware ceiling, which is unavoidable.
+    NativeTts.speak({ text, rate: (wpm / 300) * rateMul, voiceId }).catch(() => { setPlayingUI(false); });
   }
 
   /* ---- text-to-speech playback (web) ---- */
