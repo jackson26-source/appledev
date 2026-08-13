@@ -67,6 +67,23 @@ jobs:
           echo "$APP_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision"
           echo "$SHARE_PROFILE_BASE64" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/share.mobileprovision"
 
+          echo "----- codesigning identities available in keychain -----"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
+
+          echo "----- app.mobileprovision (decoded) -----"
+          security cms -D -i "$HOME/Library/MobileDevice/Provisioning Profiles/app.mobileprovision" > "$RUNNER_TEMP/app_profile.plist" 2>/dev/null || echo "FAILED TO DECODE app.mobileprovision"
+          grep -A1 "<key>Name</key>" "$RUNNER_TEMP/app_profile.plist" || true
+          grep -A1 "<key>UUID</key>" "$RUNNER_TEMP/app_profile.plist" || true
+          grep -A3 "<key>TeamIdentifier</key>" "$RUNNER_TEMP/app_profile.plist" || true
+          grep -A1 "<key>application-identifier</key>" "$RUNNER_TEMP/app_profile.plist" || true
+          grep -A3 "<key>ExpirationDate</key>" "$RUNNER_TEMP/app_profile.plist" || true
+
+          echo "----- share.mobileprovision (decoded) -----"
+          security cms -D -i "$HOME/Library/MobileDevice/Provisioning Profiles/share.mobileprovision" > "$RUNNER_TEMP/share_profile.plist" 2>/dev/null || echo "FAILED TO DECODE share.mobileprovision"
+          grep -A1 "<key>Name</key>" "$RUNNER_TEMP/share_profile.plist" || true
+          grep -A1 "<key>UUID</key>" "$RUNNER_TEMP/share_profile.plist" || true
+          grep -A1 "<key>application-identifier</key>" "$RUNNER_TEMP/share_profile.plist" || true
+
       - name: Archive
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
