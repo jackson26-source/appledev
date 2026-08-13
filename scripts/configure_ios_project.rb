@@ -31,6 +31,7 @@ PROJECT_PATH = File.join(ROOT, 'ios/App/App.xcodeproj')
 APP_GROUP_ID = 'group.com.citolex.app'
 BUNDLE_ID_APP = 'com.citolex.app'
 BUNDLE_ID_SHARE = 'com.citolex.app.share'
+APPLE_TEAM_ID = ENV.fetch('APPLE_TEAM_ID', '8N6W89UUA5')
 
 abort "Xcode project not found at #{PROJECT_PATH} — run `npx cap add ios` first." unless File.exist?(PROJECT_PATH)
 
@@ -73,6 +74,10 @@ PLIST
 app_target.build_configurations.each do |config|
   config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = BUNDLE_ID_APP
+  config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+  config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
+  config.build_settings['DEVELOPMENT_TEAM'] = APPLE_TEAM_ID
+  config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'Citolex App Store'
 end
 
 info_plist_path = File.join(app_src_dir, 'Info.plist')
@@ -118,6 +123,20 @@ share_target.build_configurations.each do |config|
   config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'CitolexShare/CitolexShare.entitlements'
   config.build_settings['SWIFT_VERSION'] = '5.0'
   config.build_settings['TARGETED_DEVICE_FAMILY'] = '1,2'
+  config.build_settings['CODE_SIGN_STYLE'] = 'Manual'
+  config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
+  config.build_settings['DEVELOPMENT_TEAM'] = APPLE_TEAM_ID
+  config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'Citolex Share App Store'
+end
+
+# Also record manual signing + team in the project's TargetAttributes, which
+# is where Xcode itself (and some xcodebuild paths) look for provisioning
+# style — belt and suspenders alongside the build settings above.
+project.root_object.attributes['TargetAttributes'] ||= {}
+[app_target, share_target].each do |t|
+  project.root_object.attributes['TargetAttributes'][t.uuid] ||= {}
+  project.root_object.attributes['TargetAttributes'][t.uuid]['ProvisioningStyle'] = 'Manual'
+  project.root_object.attributes['TargetAttributes'][t.uuid]['DevelopmentTeam'] = APPLE_TEAM_ID
 end
 
 # ---------------------------------------------------------------------------
