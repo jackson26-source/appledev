@@ -71,7 +71,7 @@ File.write(app_entitlements_path, <<~PLIST)
 PLIST
 
 app_target.build_configurations.each do |config|
-  config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App/App.entitlements'
+  config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'App/App.entitlements'
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = BUNDLE_ID_APP
 end
 
@@ -114,8 +114,8 @@ share_target.add_file_references([share_file_refs])
 
 share_target.build_configurations.each do |config|
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = BUNDLE_ID_SHARE
-  config.build_settings['INFOPLIST_FILE'] = 'ios/App/CitolexShare/Info.plist'
-  config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'ios/App/CitolexShare/CitolexShare.entitlements'
+  config.build_settings['INFOPLIST_FILE'] = 'CitolexShare/Info.plist'
+  config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'CitolexShare/CitolexShare.entitlements'
   config.build_settings['SWIFT_VERSION'] = '5.0'
   config.build_settings['TARGETED_DEVICE_FAMILY'] = '1,2'
 end
