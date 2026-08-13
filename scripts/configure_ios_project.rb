@@ -32,6 +32,13 @@ APP_GROUP_ID = 'group.com.citolex.app'
 BUNDLE_ID_APP = 'com.citolex.app'
 BUNDLE_ID_SHARE = 'com.citolex.app.share'
 APPLE_TEAM_ID = ENV.fetch('APPLE_TEAM_ID', '8N6W89UUA5')
+# App Store Connect silently rejects re-uploads that reuse the same
+# marketing version + build number pair (the *file transfer* still reports
+# success via altool either way, which is why this can look fine in the CI
+# log while the build never actually shows up in TestFlight). Every CI run
+# gets a unique build number from GitHub's own per-workflow run counter, so
+# every push produces an installable build.
+BUILD_NUMBER = ENV.fetch('BUILD_NUMBER', '1')
 
 abort "Xcode project not found at #{PROJECT_PATH} — run `npx cap add ios` first." unless File.exist?(PROJECT_PATH)
 
@@ -78,6 +85,7 @@ app_target.build_configurations.each do |config|
   config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
   config.build_settings['DEVELOPMENT_TEAM'] = APPLE_TEAM_ID
   config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'Citolex App Store'
+  config.build_settings['CURRENT_PROJECT_VERSION'] = BUILD_NUMBER
 end
 
 info_plist_path = File.join(app_src_dir, 'Info.plist')
@@ -128,6 +136,7 @@ share_target.build_configurations.each do |config|
   config.build_settings['CODE_SIGN_IDENTITY'] = 'Apple Distribution'
   config.build_settings['DEVELOPMENT_TEAM'] = APPLE_TEAM_ID
   config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'Citolex Share App Store'
+  config.build_settings['CURRENT_PROJECT_VERSION'] = BUILD_NUMBER
 end
 
 # Also record manual signing + team in the project's TargetAttributes, which
