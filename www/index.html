@@ -750,7 +750,29 @@
 
   /* ---- native app bridge (no-ops / falls through cleanly on the plain web
      version at citolex.com — only active when running inside the Capacitor
-     iOS shell, where window.Capacitor is injected automatically) ---- */
+     iOS shell, where window.Capacitor is injected automatically) ----
+     The native Swift side (NativeTtsPlugin.swift / SharedTextPlugin.swift)
+     auto-registers itself with the bridge just by existing in the App
+     target — but the JS side of a Capacitor plugin does NOT auto-appear on
+     Capacitor.Plugins just because the native half exists. Normally
+     ios-plugin/NativeTts.ts and SharedText.ts would call registerPlugin()
+     to create that binding, but this app has no JS bundler — those .ts
+     files are reference/typing source only and are never actually
+     compiled into this plain <script> bundle, so that call was never
+     happening and Capacitor.Plugins.NativeTts/SharedText stayed undefined
+     forever (hence "Not supported" for voice, and shared text silently
+     never arriving). Call the same registerPlugin bridge API directly
+     here instead, using Capacitor's own global (the same one the npm
+     @capacitor/core package's registerPlugin() just wraps). */
+  if (window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
+    try { window.Capacitor.Plugins = window.Capacitor.Plugins || {}; } catch(e) {}
+    try {
+      if (!window.Capacitor.Plugins.NativeTts) window.Capacitor.Plugins.NativeTts = window.Capacitor.registerPlugin('NativeTts');
+    } catch(e) {}
+    try {
+      if (!window.Capacitor.Plugins.SharedText) window.Capacitor.Plugins.SharedText = window.Capacitor.registerPlugin('SharedText');
+    } catch(e) {}
+  }
   const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const NativeTts = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.NativeTts : null;
   const SharedText = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.SharedText : null;
