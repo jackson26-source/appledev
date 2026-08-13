@@ -754,24 +754,52 @@
      The native Swift side (NativeTtsPlugin.swift / SharedTextPlugin.swift)
      auto-registers itself with the bridge just by existing in the App
      target — but the JS side of a Capacitor plugin does NOT auto-appear on
-     Capacitor.Plugins just because the native half exists. Normally
-     ios-plugin/NativeTts.ts and SharedText.ts would call registerPlugin()
-     to create that binding, but this app has no JS bundler — those .ts
-     files are reference/typing source only and are never actually
-     compiled into this plain <script> bundle, so that call was never
-     happening and Capacitor.Plugins.NativeTts/SharedText stayed undefined
-     forever (hence "Not supported" for voice, and shared text silently
-     never arriving). Call the same registerPlugin bridge API directly
-     here instead, using Capacitor's own global (the same one the npm
-     @capacitor/core package's registerPlugin() just wraps). */
-  if (window.Capacitor && typeof window.Capacitor.registerPlugin === 'function') {
-    try { window.Capacitor.Plugins = window.Capacitor.Plugins || {}; } catch(e) {}
+     Capacitor.Plugins for free. Normally ios-plugin/NativeTts.ts and
+     SharedText.ts would call the @capacitor/core package's registerPlugin()
+     to create that binding, but this app has no JS bundler, so those .ts
+     files never actually run.
+     A previous attempt at this fix called window.Capacitor.registerPlugin()
+     directly, assuming it was exposed on the raw native-injected bridge —
+     it isn't. That function only exists on the fuller Capacitor object that
+     @capacitor/core's own JS builds on top of the raw bridge, which again
+     requires the npm package's JS to actually run. The raw bridge that
+     WKWebView injects (native-bridge.js, confirmed straight from
+     Capacitor's own source) only exposes the lower-level primitives below —
+     so this builds the plugin objects directly from those instead, with no
+     dependency on @capacitor/core's JS or any bundler/CDN (keeping the app
+     fully offline, matching how it's declared for export compliance). */
+  if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() &&
+      typeof window.Capacitor.nativePromise === 'function' && typeof window.Capacitor.nativeCallback === 'function') {
+    var makeNativePluginShim = function (pluginName, methodNames) {
+      var shim = {};
+      methodNames.forEach(function (m) {
+        shim[m] = function (options) { return window.Capacitor.nativePromise(pluginName, m, options || {}); };
+      });
+      shim.addListener = function (eventName, callback) {
+        var callbackId = window.Capacitor.nativeCallback(pluginName, 'addListener', { eventName: eventName }, callback);
+        return {
+          remove: function () {
+            try {
+              if (typeof window.Capacitor.removeListener === 'function') {
+                window.Capacitor.removeListener(pluginName, callbackId, eventName, callback);
+              }
+            } catch (e) {}
+          }
+        };
+      };
+      return shim;
+    };
+    try { window.Capacitor.Plugins = window.Capacitor.Plugins || {}; } catch (e) {}
     try {
-      if (!window.Capacitor.Plugins.NativeTts) window.Capacitor.Plugins.NativeTts = window.Capacitor.registerPlugin('NativeTts');
-    } catch(e) {}
+      if (!window.Capacitor.Plugins.NativeTts) {
+        window.Capacitor.Plugins.NativeTts = makeNativePluginShim('NativeTts', ['listVoices', 'speak', 'pause', 'resume', 'stop']);
+      }
+    } catch (e) {}
     try {
-      if (!window.Capacitor.Plugins.SharedText) window.Capacitor.Plugins.SharedText = window.Capacitor.registerPlugin('SharedText');
-    } catch(e) {}
+      if (!window.Capacitor.Plugins.SharedText) {
+        window.Capacitor.Plugins.SharedText = makeNativePluginShim('SharedText', ['consume']);
+      }
+    } catch (e) {}
   }
   const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const NativeTts = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.NativeTts : null;
