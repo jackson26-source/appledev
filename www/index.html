@@ -382,8 +382,13 @@
                 var(--bg);
     display:none; align-items:center; justify-content:center; flex-direction:column;
     cursor:pointer;
+    /* Pull-down-to-exit gesture: follows the finger with no transition while
+       actively dragging (.dragging), then springs back or fades out smoothly
+       once released — see the touch handlers below. */
+    transition: transform .32s var(--spring), opacity .3s ease;
   }
   .focus-overlay.active{ display:flex; }
+  .focus-overlay.dragging{ transition:none; }
   .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
   .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
   .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
@@ -1290,26 +1295,36 @@
   }
   function exitFocusMode(){
     focusOverlay.classList.remove('active');
+    // Always clear any leftover drag transform/opacity, however exit was
+    // triggered (button, Escape, pull-down gesture) — otherwise a future
+    // fullscreen entry could start already partway offset/faded.
+    focusOverlay.classList.remove('dragging');
+    focusOverlay.style.transform = '';
+    focusOverlay.style.opacity = '';
     if (!isNativeApp && (document.fullscreenElement || document.webkitFullscreenElement)) {
       const exit = document.exitFullscreen || document.webkitExitFullscreen;
       if (exit) { try { exit.call(document).catch(() => {}); } catch(e){} }
     }
   }
+  let focusHintTimer = null;
   function maybeShowFocusHint(){
-    // _v2: the hint moved to the bottom of the screen in this update, so the
-    // key is bumped to show it fresh once more even for people who already
-    // dismissed the old (top-positioned) version.
-    try {
-      if (localStorage.getItem('citolex_seen_focus_hint_v2') === '1') return;
-    } catch(e){}
+    // Shows every time fullscreen is entered, not just once — a one-time-only
+    // toast turned out to be too easy to miss/consume without ever really
+    // registering, so this trades a little repetition for actually being seen.
+    focusHint.classList.remove('show');
+    // Force a reflow before re-adding 'show' so the opacity transition always
+    // re-triggers even if the class never fully left (rapid re-entry), instead
+    // of silently no-opping because the class was already present.
+    void focusHint.offsetWidth;
     focusHint.classList.add('show');
-    setTimeout(() => { focusHint.classList.remove('show'); }, 3000);
-    try { localStorage.setItem('citolex_seen_focus_hint_v2', '1'); } catch(e){}
+    clearTimeout(focusHintTimer);
+    focusHintTimer = setTimeout(() => { focusHint.classList.remove('show'); }, 3000);
   }
   focusBtn.addEventListener('click', enterFocusMode);
   focusExitBtn.addEventListener('click', (e) => { e.stopPropagation(); exitFocusMode(); });
   focusOverlay.addEventListener('click', (e) => {
     if (e.target === focusExitBtn) return;
+    if (focusDragged) { focusDragged = false; return; }
     playBtn.click();
   });
   document.addEventListener('keydown', (e) => {
@@ -1323,6 +1338,57 @@
   document.addEventListener('webkitfullscreenchange', () => {
     if (!document.webkitFullscreenElement) focusOverlay.classList.remove('active');
   });
+
+  /* ---- pull-down to exit fullscreen ----
+     Drag down from anywhere in the focus overlay (except the exit button)
+     to dismiss it, mirroring the Photos/Messages "pull down to close" full-
+     screen gesture. The overlay follows the finger 1:1 while dragging, then
+     either completes the exit (past the threshold) or springs back. */
+  let focusDragStartY = null;
+  let focusDragDY = 0;
+  let focusDragged = false;
+  const FOCUS_DRAG_EXIT_THRESHOLD = 110;
+
+  focusOverlay.addEventListener('touchstart', (e) => {
+    if (!focusOverlay.classList.contains('active')) return;
+    if (e.target === focusExitBtn || (e.target.closest && e.target.closest('#focusExitBtn'))) return;
+    if (e.touches.length !== 1) return;
+    focusDragStartY = e.touches[0].clientY;
+    focusDragDY = 0;
+    focusDragged = false;
+    focusOverlay.classList.add('dragging');
+  }, { passive: true });
+
+  focusOverlay.addEventListener('touchmove', (e) => {
+    if (focusDragStartY === null || e.touches.length !== 1) return;
+    const dy = e.touches[0].clientY - focusDragStartY;
+    if (dy <= 0) { focusDragDY = 0; focusOverlay.style.transform = ''; focusOverlay.style.opacity = ''; return; }
+    focusDragDY = dy;
+    if (dy > 6) focusDragged = true;
+    e.preventDefault();
+    focusOverlay.style.transform = 'translateY(' + Math.min(dy, 260) + 'px)';
+    focusOverlay.style.opacity = String(Math.max(0.5, 1 - dy / 480));
+  }, { passive: false });
+
+  function endFocusDrag(){
+    focusOverlay.classList.remove('dragging');
+    const dy = focusDragDY;
+    focusDragStartY = null;
+    focusDragDY = 0;
+    if (dy > FOCUS_DRAG_EXIT_THRESHOLD) {
+      focusOverlay.style.transform = '';
+      focusOverlay.style.opacity = '';
+      exitFocusMode();
+    } else if (dy > 0) {
+      // Didn't drag far enough — spring back to fully open.
+      focusOverlay.style.transform = '';
+      focusOverlay.style.opacity = '';
+    }
+    // Leave focusDragged as-is here; the subsequent click handler (if any)
+    // reads and clears it so a completed drag never also toggles play/pause.
+  }
+  focusOverlay.addEventListener('touchend', endFocusDrag);
+  focusOverlay.addEventListener('touchcancel', endFocusDrag);
 
   /* ---- initial load ---- */
   const defaultText = "Citolex flashes text one word at a time so your eyes never have to move across a line, letting you read faster. Turn on read aloud and a natural voice keeps pace, word for word, so you can listen instead of look. The optimal recognition point stays centered in the accent color so recognition is instant and effortless. Paste your own article, upload a text file, or try a link to see how fast you can go.";
