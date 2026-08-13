@@ -2,83 +2,89 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Citolex — speed reading, reimagined</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
+  /* Forest is the default palette now (no theme-* class needed) — it reads
+     less like the generic violet-gradient "AI SaaS" look this started with.
+     Violet is still available as a selectable theme, just no longer default. */
   :root{
-    --bg: #0a0a0f;
-    --bg-alt: #0f0f17;
-    --panel: #14141d;
-    --panel-2: #191924;
+    --bg: #070f0c;
+    --bg-alt: #0b1512;
+    --panel: #101c17;
+    --panel-2: #14231d;
     --border: rgba(255,255,255,0.08);
     --border-strong: rgba(255,255,255,0.14);
-    --text: #f2f2f7;
-    --text-dim: #9494a6;
-    --text-faint: #5c5c6e;
-    --accent: #7c6cf0;
-    --accent-2: #5ee6c7;
-    --accent-grad: linear-gradient(135deg, #7c6cf0 0%, #b06cf0 50%, #5ee6c7 100%);
-    --orp: #ff6b6b;
-    --glow-1: rgba(124,108,240,0.18);
-    --glow-2: rgba(94,230,199,0.10);
-    --focus-bg: #1c1c29;
+    --text: #eef7f0;
+    --text-dim: #8fa89a;
+    --text-faint: #53695e;
+    --accent: #4caf7d;
+    --accent-2: #a3e635;
+    --accent-ink: #06110b;
+    --accent-grad: linear-gradient(135deg, #4caf7d 0%, #7bc96f 50%, #a3e635 100%);
+    --orp: #ffb454;
+    --glow-1: rgba(76,175,125,0.10);
+    --glow-2: rgba(163,230,53,0.06);
+    --focus-bg: #162721;
     --radius: 14px;
     --radius-sm: 9px;
+    --spring: cubic-bezier(0.32, 0.72, 0, 1);
     font-size: 16px;
   }
 
   /* THEMES — swap the color variables above; everything else (layout,
      spacing, the RSVP mechanics) reads from these vars so it just works. */
+  body.theme-violet{
+    --bg:#0a0a0f; --bg-alt:#0f0f17; --panel:#14141d; --panel-2:#191924;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#f2f2f7; --text-dim:#9494a6; --text-faint:#5c5c6e;
+    --accent:#7c6cf0; --accent-2:#5ee6c7; --accent-ink:#0a0a0f;
+    --accent-grad:linear-gradient(135deg,#7c6cf0 0%,#b06cf0 50%,#5ee6c7 100%);
+    --orp:#ff6b6b; --glow-1:rgba(124,108,240,0.12); --glow-2:rgba(94,230,199,0.07);
+    --focus-bg:#1c1c29;
+  }
   body.theme-midnight{
     --bg:#060a14; --bg-alt:#0a0f1c; --panel:#0e1526; --panel-2:#121a2f;
     --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
     --text:#eef2ff; --text-dim:#8b93b0; --text-faint:#535a75;
-    --accent:#4f8cff; --accent-2:#38d9e0;
+    --accent:#4f8cff; --accent-2:#38d9e0; --accent-ink:#04070f;
     --accent-grad:linear-gradient(135deg,#4f8cff 0%,#6c6cf0 50%,#38d9e0 100%);
-    --orp:#ff8a5c; --glow-1:rgba(79,140,255,0.20); --glow-2:rgba(56,217,224,0.12);
+    --orp:#ff8a5c; --glow-1:rgba(79,140,255,0.14); --glow-2:rgba(56,217,224,0.08);
     --focus-bg:#141e36;
-  }
-  body.theme-forest{
-    --bg:#070f0c; --bg-alt:#0b1512; --panel:#101c17; --panel-2:#14231d;
-    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
-    --text:#eef7f0; --text-dim:#8fa89a; --text-faint:#53695e;
-    --accent:#4caf7d; --accent-2:#a3e635;
-    --accent-grad:linear-gradient(135deg,#4caf7d 0%,#7bc96f 50%,#a3e635 100%);
-    --orp:#ffb454; --glow-1:rgba(76,175,125,0.20); --glow-2:rgba(163,230,53,0.10);
-    --focus-bg:#162721;
   }
   body.theme-sunset{
     --bg:#120a0a; --bg-alt:#180d0d; --panel:#1f1212; --panel-2:#271614;
     --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
     --text:#fdf1ec; --text-dim:#b09088; --text-faint:#6b544f;
-    --accent:#ff7a59; --accent-2:#ffd166;
+    --accent:#ff7a59; --accent-2:#ffd166; --accent-ink:#160a06;
     --accent-grad:linear-gradient(135deg,#ff7a59 0%,#ff5f8f 50%,#ffd166 100%);
-    --orp:#5ee6c7; --glow-1:rgba(255,122,89,0.20); --glow-2:rgba(255,209,102,0.12);
+    --orp:#5ee6c7; --glow-1:rgba(255,122,89,0.14); --glow-2:rgba(255,209,102,0.08);
     --focus-bg:#2c1a1a;
   }
   body.theme-mono{
     --bg:#0a0a0a; --bg-alt:#0f0f0f; --panel:#161616; --panel-2:#1c1c1c;
     --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.16);
     --text:#f2f2f2; --text-dim:#9a9a9a; --text-faint:#5c5c5c;
-    --accent:#d8d8d8; --accent-2:#8a8a8a;
+    --accent:#d8d8d8; --accent-2:#8a8a8a; --accent-ink:#0a0a0a;
     --accent-grad:linear-gradient(135deg,#e8e8e8 0%,#b0b0b0 50%,#8a8a8a 100%);
-    --orp:#ff6b6b; --glow-1:rgba(255,255,255,0.06); --glow-2:rgba(255,255,255,0.04);
+    --orp:#ff6b6b; --glow-1:rgba(255,255,255,0.05); --glow-2:rgba(255,255,255,0.03);
     --focus-bg:#1f1f1f;
   }
   body.theme-highcontrast{
     --bg:#000000; --bg-alt:#000000; --panel:#0c0c0c; --panel-2:#141414;
     --border:rgba(255,255,255,0.18); --border-strong:rgba(255,255,255,0.35);
     --text:#ffffff; --text-dim:#cfcfcf; --text-faint:#8a8a8a;
-    --accent:#ffd400; --accent-2:#00e5ff;
+    --accent:#ffd400; --accent-2:#00e5ff; --accent-ink:#0a0800;
     --accent-grad:linear-gradient(135deg,#ffd400 0%,#ff9900 50%,#00e5ff 100%);
-    --orp:#ff3b30; --glow-1:rgba(255,212,0,0.14); --glow-2:rgba(0,229,255,0.10);
+    --orp:#ff3b30; --glow-1:rgba(255,212,0,0.12); --glow-2:rgba(0,229,255,0.08);
     --focus-bg:#111111;
   }
 
   *{box-sizing:border-box; margin:0; padding:0;}
+  html, body{ height:100%; }
   body{
     background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
                 radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%),
@@ -87,78 +93,91 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.5;
     min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
     transition: background .25s, color .25s;
-  }
-  .wrap{
-    max-width: 1080px; margin: 0 auto;
-    padding-top: max(32px, env(safe-area-inset-top));
-    padding-right: max(28px, env(safe-area-inset-right));
-    padding-bottom: max(100px, env(safe-area-inset-bottom));
-    padding-left: max(28px, env(safe-area-inset-left));
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
   }
 
-  /* WELCOME MODAL — shown once, to first-time visitors. Reuses the eyebrow/
-     h1/subhead styles below; that copy used to sit inline as a page "hero"
-     but now only lives inside this modal. */
+  /* Native-feeling press feedback on every tappable control, in one place. */
+  button{ font-family:inherit; -webkit-tap-highlight-color:transparent; }
+  .icon-btn, .play-btn, .load-btn, .action-btn, .welcome-cta, .seg{
+    transition: transform .12s ease, background .15s ease, color .15s ease, border-color .15s ease, opacity .15s ease;
+  }
+  .icon-btn:active, .play-btn:active, .load-btn:active, .action-btn:active, .welcome-cta:active{
+    transform: scale(0.92);
+  }
+
+  /* ---- top bar ---- */
+  .app-topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: max(16px, env(safe-area-inset-top)) 18px 6px;
+    max-width: 640px; margin: 0 auto;
+  }
+  .topbar-mark{ display:flex; align-items:center; gap:9px; }
+  .topbar-mark .dot-mark{ width:9px; height:9px; border-radius:50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .topbar-mark span{ font-weight:700; font-size:15px; letter-spacing:-0.01em; color: var(--text-dim); }
+
+  .icon-btn{
+    width:38px; height:38px; border-radius:50%; flex-shrink:0;
+    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text-dim);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .icon-btn svg{ width:18px; height:18px; }
+  .icon-btn:hover{ color: var(--text); border-color: var(--accent); }
+  .icon-btn.ghost{ background: rgba(0,0,0,0.28); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); border-color: rgba(255,255,255,0.12); }
+
+  /* ---- welcome modal — shown once, to first-time visitors ---- */
   .eyebrow{
     display:inline-flex; align-items:center; gap:7px;
-    background: var(--panel); border:1px solid var(--border-strong);
+    background: var(--panel-2); border:1px solid var(--border-strong);
     padding: 7px 14px; border-radius: 999px; font-size: 12.5px; color: var(--accent-2);
-    font-weight:600; margin-bottom: 22px;
+    font-weight:600; margin-bottom: 20px;
   }
   .dot{ width:6px; height:6px; border-radius:50%; background: var(--accent-2); }
-  h1{
-    font-size: 52px; font-weight: 800; letter-spacing: -0.03em; line-height:1.08;
-    margin-bottom: 18px;
-  }
-  h1 span{
-    background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .subhead{ color: var(--text-dim); font-size: 17px; max-width: 540px; margin: 0 auto 40px; }
+  h1{ font-size: 32px; font-weight: 800; letter-spacing: -0.03em; line-height:1.1; margin-bottom: 14px; }
+  h1 span{ background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .subhead{ color: var(--text-dim); font-size: 15px; margin: 0 0 24px; }
 
   .welcome-overlay{
     position:fixed; inset:0; z-index:2000;
-    background: rgba(4,4,8,0.72); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+    background: rgba(2,4,3,0.75); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     display:none; align-items:center; justify-content:center; padding: 24px;
   }
   .welcome-overlay.active{ display:flex; }
   .welcome-card{
-    background: var(--panel); border:1px solid var(--border-strong); border-radius: 20px;
-    padding: 40px 34px 34px; max-width: 460px; width:100%; text-align:center;
-    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.7);
+    background: var(--panel); border:1px solid var(--border-strong); border-radius: 26px;
+    padding: 34px 30px calc(28px + env(safe-area-inset-bottom)); max-width: 420px; width:100%; text-align:center;
+    box-shadow: 0 40px 90px -25px rgba(0,0,0,0.7);
+    animation: sheetPop .38s var(--spring);
   }
-  .welcome-card .eyebrow{ margin: 0 auto 22px; }
-  .welcome-card h1{ font-size: 32px; margin-bottom: 14px; }
-  .welcome-card .subhead{ margin: 0 auto 26px; font-size: 15px; }
+  @keyframes sheetPop{ from{ opacity:0; transform: translateY(18px) scale(0.97); } to{ opacity:1; transform:none; } }
   .welcome-dontshow{
     display:flex; align-items:center; justify-content:center; gap:8px;
-    font-size:13px; color: var(--text-dim); margin-bottom: 22px; cursor:pointer; user-select:none;
+    font-size:13px; color: var(--text-dim); margin-bottom: 20px; cursor:pointer; user-select:none;
   }
   .welcome-dontshow input{ width:16px; height:16px; accent-color: var(--accent); cursor:pointer; }
   .welcome-cta{
-    width:100%; padding:14px; border-radius:999px; border:none;
-    background: var(--accent-grad); color:#0a0a0f; font-weight:700; font-size:15px; cursor:pointer;
+    width:100%; padding:15px; border-radius:999px; border:none;
+    background: var(--accent); color: var(--accent-ink); font-weight:700; font-size:15px; cursor:pointer;
   }
 
-  /* READER CARD */
-  .reader-card{
+  /* ---- reader hero — the whole point of the app, so it's the biggest,
+     least-chrome-y thing on screen, edge to edge, no nested "card in a
+     card" website framing ---- */
+  .reader-hero{ padding: 8px 14px 0; max-width: 640px; margin: 0 auto; }
+  .reader-stage{
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 8px;
-    margin-bottom: 22px;
-    box-shadow: 0 30px 80px -30px rgba(0,0,0,0.6);
-  }
-  .reader-stage{
-    background: var(--bg-alt);
-    border-radius: 16px;
-    padding: 64px 24px;
+    border-radius: 26px;
+    padding: 15vh 20px;
     display:flex; align-items:center; justify-content:center;
     position:relative;
-    min-height: 210px;
+    min-height: 200px;
+    box-shadow: 0 30px 80px -35px rgba(0,0,0,0.6);
   }
   .orp-guides{
-    position:absolute; top:24px; bottom:24px; left:50%; width:1px;
+    position:absolute; top:22px; bottom:22px; left:50%; width:1px;
     background: repeating-linear-gradient(to bottom, var(--border-strong) 0 4px, transparent 4px 10px);
   }
   .word-display{
@@ -166,56 +185,121 @@
     font-size: 54px; font-weight: 700; letter-spacing: -0.01em;
     font-variant-ligatures: none; white-space:nowrap;
   }
-  .word-display .pre, .word-display .post{
-    flex: 1 1 0; min-width:0; white-space:nowrap; overflow:hidden;
-  }
+  .word-display .pre, .word-display .post{ flex: 1 1 0; min-width:0; white-space:nowrap; overflow:hidden; }
   .word-display .pre{ text-align:right; }
   .word-display .post{ text-align:left; text-overflow:ellipsis; }
   .word-display .pivot{ flex: 0 0 auto; color: var(--accent); }
 
-  .focus-btn{
-    position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:50%;
-    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text-dim);
-    display:flex; align-items:center; justify-content:center; font-size:15px; cursor:pointer;
-    opacity:0.65; transition: all .15s; z-index:2;
-  }
-  .focus-btn:hover{ opacity:1; border-color: var(--accent); color: var(--text); }
+  .reader-stage .icon-btn{ position:absolute; top:14px; right:14px; z-index:2; }
 
-  .reader-controls{ padding: 22px 26px 18px; }
-  .progress-row{ display:flex; align-items:center; gap:14px; margin-bottom: 22px; }
+  .progress-row{ display:flex; align-items:center; gap:12px; padding: 14px 4px 0; }
   .progress-track{
-    flex:1; height:6px; background: var(--panel-2); border-radius: 999px; overflow:hidden;
+    flex:1; height:5px; background: var(--panel-2); border-radius: 999px; overflow:hidden;
     border: 1px solid var(--border);
   }
-  .progress-fill{ height:100%; width: 0%; background: var(--accent-grad); border-radius:999px; transition: width .15s linear; }
-  .progress-label{ font-size:12.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; min-width: 92px; text-align:right; }
+  .progress-fill{ height:100%; width: 0%; background: var(--accent); border-radius:999px; transition: width .15s linear; }
+  .progress-label{ font-size:11.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; min-width: 78px; text-align:right; }
 
-  .transport{ display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom: 24px; }
-  .transport button{
-    background: var(--panel-2); border: 1px solid var(--border-strong); color: var(--text);
-    width:44px; height:44px; border-radius:999px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-size:16px;
-    transition: all .15s;
+  /* ---- persistent bottom control bar — the "mini player" pattern from
+     Music/Podcasts/Spotify: always in thumb reach, no scrolling required ---- */
+  .bottom-bar{
+    position:fixed; left:0; right:0; bottom:0; z-index:500;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--panel) 82%, transparent);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4); backdrop-filter: blur(22px) saturate(1.4);
+    border-top: 1px solid var(--border);
   }
-  .transport button:hover{ border-color: var(--accent); }
-  .transport .play{
-    width:60px; height:60px; background: var(--accent-grad); border:none; color:#0a0a0f; font-size:20px;
+  .transport-main{ display:flex; align-items:center; justify-content:center; gap:12px; flex:1; }
+  .transport-main .icon-btn{ width:42px; height:42px; }
+  .transport-main .icon-btn svg{ width:19px; height:19px; }
+  .play-btn{
+    width:58px; height:58px; border-radius:50%; flex-shrink:0;
+    background: var(--accent); color: var(--accent-ink); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 10px 26px -10px rgba(0,0,0,0.55);
   }
+  .play-btn svg{ width:23px; height:23px; }
 
-  .controls-grid{ display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 22px; align-items:center; }
+  /* ---- bottom sheets — Add text / Settings live here instead of being
+     permanently stacked "website panels" on the page ---- */
+  .sheet-backdrop{
+    position:fixed; inset:0; z-index:800; background: rgba(0,0,0,0.55);
+    opacity:0; pointer-events:none; transition: opacity .3s ease;
+  }
+  .sheet-backdrop.open{ opacity:1; pointer-events:auto; }
+  .sheet{
+    position:fixed; left:0; right:0; bottom:0; z-index:801;
+    background: var(--panel); border:1px solid var(--border-strong); border-bottom:none;
+    border-top-left-radius:28px; border-top-right-radius:28px;
+    padding: 8px 20px calc(24px + env(safe-area-inset-bottom));
+    max-height: 84vh; overflow-y: auto;
+    transform: translateY(106%);
+    transition: transform .4s var(--spring);
+    box-shadow: 0 -20px 60px -20px rgba(0,0,0,0.6);
+  }
+  .sheet.open{ transform: translateY(0); }
+  .sheet-handle{ width:36px; height:4px; border-radius:999px; background: var(--border-strong); margin: 8px auto 16px; }
+  .sheet-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom: 18px; }
+  .sheet-head h2{ font-size:18px; font-weight:800; letter-spacing:-0.01em; }
+  .sheet-done{
+    background:none; border:none; color: var(--accent-2); font-weight:600; font-size:14.5px; cursor:pointer; padding:6px 2px;
+  }
+  .sheet-section{ margin-bottom: 22px; }
+  .sheet-section:last-child{ margin-bottom:0; }
+  .sheet-section-label{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color: var(--text-faint); margin-bottom:10px; }
+
+  /* segmented control, replaces the old div-pill "tabs" */
+  .segmented{ display:flex; background: var(--panel-2); border-radius:12px; padding:3px; gap:2px; margin-bottom:14px; }
+  .segmented .seg{
+    flex:1; text-align:center; padding:9px 0; border-radius:9px; font-size:13px; font-weight:600;
+    color: var(--text-dim); cursor:pointer; user-select:none;
+  }
+  .segmented .seg.active{ background: var(--panel); color: var(--text); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+
+  .textarea-real{
+    width:100%; min-height:130px; background: var(--bg-alt); border:1px solid var(--border);
+    border-radius: var(--radius-sm); padding:14px 16px; font-size:14px; color: var(--text);
+    line-height:1.7; font-family:'Inter', sans-serif; resize:vertical;
+  }
+  .textarea-real:focus{ outline:none; border-color: var(--accent); }
+  .tab-panel{ margin-bottom:14px; }
+  .file-input{
+    width:100%; background: var(--bg-alt); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding:12px; color: var(--text-dim); font-size:13px;
+  }
+  .url-row{ display:flex; gap:8px; }
+  .url-input{
+    flex:1; background: var(--bg-alt); border:1px solid var(--border); border-radius: var(--radius-sm);
+    padding:12px; color: var(--text); font-size:14px;
+  }
+  .url-input:focus{ outline:none; border-color: var(--accent); }
+  .action-btn{
+    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text); font-size:13px;
+    padding:0 18px; border-radius: var(--radius-sm); cursor:pointer; font-weight:600; white-space:nowrap;
+  }
+  .hint{ font-size:12px; color: var(--text-faint); margin-top:8px; line-height:1.5; }
+  .load-btn{
+    width:100%; margin-top:4px; padding:14px; border-radius:999px; border:none;
+    background: var(--accent); color: var(--accent-ink); font-weight:700; font-size:14.5px; cursor:pointer;
+  }
+  .status-msg{ font-size:12.5px; color: var(--accent-2); margin-top:12px; min-height:14px; text-align:center; }
+
   .theme-select{
     width:100%; background: var(--panel-2); border:1px solid var(--border-strong);
-    color: var(--text); padding:9px 10px; border-radius: var(--radius-sm);
-    font-size:13.5px; font-family:inherit; cursor:pointer;
+    color: var(--text); padding:11px 12px; border-radius: var(--radius-sm);
+    font-size:14px; font-family:inherit; cursor:pointer;
   }
   .theme-select:focus{ outline:none; border-color: var(--accent); }
-  .slider-group label{ display:flex; justify-content:space-between; font-size:12.5px; color: var(--text-dim); margin-bottom:8px; font-weight:500; }
+  .slider-group{ margin-bottom:18px; }
+  .slider-group:last-child{ margin-bottom:0; }
+  .slider-group label{ display:flex; justify-content:space-between; font-size:13px; color: var(--text-dim); margin-bottom:10px; font-weight:500; }
   .slider-group label b{ color: var(--text); font-variant-numeric: tabular-nums; }
   .wpm-input{
-    width: 52px; background: var(--panel-2); border: 1px solid var(--border-strong);
-    border-radius: 6px; color: var(--text); font-size: 12.5px; font-weight: 600;
+    width: 54px; background: var(--panel-2); border: 1px solid var(--border-strong);
+    border-radius: 6px; color: var(--text); font-size: 13px; font-weight: 600;
     font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums;
-    padding: 2px 4px; text-align: right; -moz-appearance: textfield;
+    padding: 3px 5px; text-align: right; -moz-appearance: textfield;
   }
   .wpm-input:focus{ outline:none; border-color: var(--accent); }
   .wpm-input::-webkit-inner-spin-button, .wpm-input::-webkit-outer-spin-button{ -webkit-appearance:none; margin:0; }
@@ -224,99 +308,48 @@
     background: var(--panel-2); outline:none;
   }
   input[type="range"]::-webkit-slider-thumb{
-    -webkit-appearance:none; width:16px; height:16px; border-radius:50%;
+    -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
     background: var(--accent-2); cursor:pointer; border: 3px solid var(--bg-alt);
     box-shadow: 0 0 0 1px var(--accent-2);
+    transition: transform .12s ease;
   }
-  .tts-toggle{ display:flex; align-items:center; gap:10px; }
-  .tts-toggle span{ font-size:12.5px; color: var(--text-dim); font-weight:500; }
-  .switch{ position:relative; width:42px; height:24px; flex-shrink:0; }
+  input[type="range"]:active::-webkit-slider-thumb{ transform: scale(1.15); }
+
+  .tts-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; }
+  .tts-row span{ font-size:14px; color: var(--text); font-weight:500; }
+  .switch{ position:relative; width:44px; height:26px; flex-shrink:0; }
   .switch input{ opacity:0; width:0; height:0; }
   .slider-pill{
     position:absolute; inset:0; background: var(--panel-2); border:1px solid var(--border-strong);
     border-radius:999px; cursor:pointer; transition:.2s;
   }
   .slider-pill:before{
-    content:""; position:absolute; width:16px; height:16px; left:3px; top:3px;
+    content:""; position:absolute; width:18px; height:18px; left:3px; top:3px;
     background: var(--text-faint); border-radius:50%; transition:.2s;
   }
-  .switch input:checked + .slider-pill{ background: rgba(124,108,240,0.25); border-color: var(--accent); }
+  .switch input:checked + .slider-pill{ background: color-mix(in srgb, var(--accent) 30%, transparent); border-color: var(--accent); }
   .switch input:checked + .slider-pill:before{ transform: translateX(18px); background: var(--accent-2); }
   .switch input:disabled + .slider-pill{ opacity:0.4; cursor:not-allowed; }
 
-  /* STATS */
-  .stats-grid{
-    display:grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px;
-  }
-  .stat-card{
-    background: var(--panel); border:1px solid var(--border); border-radius: var(--radius);
-    padding: 18px 20px;
-  }
-  .stat-label{ font-size:12px; color: var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:8px; }
-  .stat-value{ font-size:26px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
-  .stat-value small{ font-size:14px; color: var(--text-dim); font-weight:500; }
-  .stat-value.accent{ color: var(--accent-2); }
-
-  /* INPUT PANEL */
-  .panel-row{ display:grid; grid-template-columns: 1.3fr 1fr; gap:16px; margin-bottom: 22px; align-items:start; }
-  .panel{ background: var(--panel); border:1px solid var(--border); border-radius: var(--radius); padding: 22px; }
-  .panel h3{ font-size:14px; font-weight:600; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; }
-  .tabs{ display:flex; gap:6px; }
-  .tab{
-    font-size:12px; color: var(--text-dim); background: var(--panel-2); border:1px solid var(--border);
-    padding:6px 12px; border-radius:8px; cursor:pointer; font-weight:500;
-  }
-  .tab.active{ background: rgba(124,108,240,0.15); border-color: var(--accent); color: var(--accent-2); }
-  .textarea-real{
-    width:100%; min-height:120px; background: var(--bg-alt); border:1px solid var(--border);
-    border-radius: var(--radius-sm); padding:14px 16px; font-size:13.5px; color: var(--text);
-    line-height:1.7; font-family:'Inter', sans-serif; resize:vertical;
-  }
-  .textarea-real:focus{ outline:none; border-color: var(--accent); }
-  .tab-panel{ margin-bottom:14px; }
-  .file-input{
-    width:100%; background: var(--bg-alt); border:1px solid var(--border); border-radius: var(--radius-sm);
-    padding:10px 12px; color: var(--text-dim); font-size:12.5px;
-  }
-  .url-row{ display:flex; gap:8px; }
-  .url-input{
-    flex:1; background: var(--bg-alt); border:1px solid var(--border); border-radius: var(--radius-sm);
-    padding:10px 12px; color: var(--text); font-size:13.5px;
-  }
-  .url-input:focus{ outline:none; border-color: var(--accent); }
-  .action-btn{
-    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text); font-size:12.5px;
-    padding:0 16px; border-radius: var(--radius-sm); cursor:pointer; font-weight:500; white-space:nowrap;
-  }
-  .action-btn:hover{ border-color: var(--accent); }
-  .hint{ font-size:12px; color: var(--text-faint); margin-top:8px; line-height:1.5; }
-  .load-btn{
-    width:100%; margin-top:6px; padding:11px; border-radius: var(--radius-sm); border:1px solid var(--border-strong);
-    background: var(--panel-2); color: var(--text); font-weight:600; font-size:13.5px; cursor:pointer;
-  }
-  .load-btn:hover{ border-color: var(--accent); }
-  .status-msg{ font-size:12px; color: var(--accent-2); margin-top:10px; min-height:14px; }
   .voice-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); gap:12px; }
   .voice-row:last-child{ border-bottom:none; }
-  .voice-row span:first-child{ font-size:13.5px; color: var(--text-dim); flex-shrink:0; }
+  .voice-row span:first-child{ font-size:14px; color: var(--text); flex-shrink:0; }
   .voice-select{
     background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text);
-    border-radius:8px; padding:7px 10px; font-size:12.5px; max-width:170px;
+    border-radius:8px; padding:8px 10px; font-size:13px; max-width:170px;
   }
   .rate-wrap{ display:flex; align-items:center; gap:10px; }
   .rate-wrap input[type="range"]{ width:100px; }
-  .rate-wrap span{ font-size:12.5px; color: var(--text); font-variant-numeric: tabular-nums; min-width:34px; }
+  .rate-wrap span{ font-size:13px; color: var(--text); font-variant-numeric: tabular-nums; min-width:34px; }
 
-  .name-note{
-    text-align:center; color: var(--text-faint); font-size:12.5px; margin-top: 30px;
-  }
+  .stats-grid{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .stat-card{ background: var(--panel-2); border:1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label{ font-size:11px; color: var(--text-faint); font-weight:600; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:6px; }
+  .stat-value{ font-size:21px; font-weight:700; letter-spacing:-0.02em; font-variant-numeric: tabular-nums; }
+  .stat-value small{ font-size:13px; color: var(--text-dim); font-weight:500; }
+  .stat-value.accent{ color: var(--accent-2); }
 
-  /* FOCUS / READ MODE — solid precomputed --focus-bg per theme (defined
-     above, right next to each theme's other colors) as the base, with the
-     same soft radial-gradient glow used on the main page layered on top for
-     a bit of depth/fade instead of a totally flat color. Deliberately NOT
-     using color-mix() here: it silently failed in testing (unsupported or
-     some other issue), and a plain hex value can't have that problem. */
+  /* ---- FOCUS / READ MODE ---- */
   .focus-overlay{
     position:fixed; inset:0; z-index:1000;
     background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
@@ -326,11 +359,6 @@
     cursor:pointer;
   }
   .focus-overlay.active{ display:flex; }
-  /* Explicitly re-assert size + theme background once this element becomes
-     the actual fullscreen element, so nothing paints behind it. Each
-     vendor-prefixed pseudo-class needs its OWN rule block — combining them
-     in one comma-separated selector makes the whole rule invalid (and get
-     dropped entirely) in browsers that don't recognize one of the prefixes. */
   .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
   .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
   .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
@@ -343,40 +371,37 @@
     font-size: clamp(40px, 9vw, 128px); font-weight: 700; letter-spacing: -0.01em;
     white-space:nowrap; cursor:default;
   }
-  .focus-word-display .pre, .focus-word-display .post{
-    flex: 1 1 0; min-width:0; white-space:nowrap; overflow:hidden;
-  }
+  .focus-word-display .pre, .focus-word-display .post{ flex: 1 1 0; min-width:0; white-space:nowrap; overflow:hidden; }
   .focus-word-display .pre{ text-align:right; }
   .focus-word-display .post{ text-align:left; }
   .focus-word-display .pivot{ flex: 0 0 auto; color: var(--accent); }
+  /* Bigger and clear of the status bar / Dynamic Island: real safe-area
+     values only work with viewport-fit=cover on the meta tag above — without
+     that, env(safe-area-inset-*) silently resolves to 0 and this button ends
+     up rendered underneath the status bar regardless of any offset here. */
   .focus-exit{
-    position:absolute; top: max(26px, env(safe-area-inset-top)); right: max(30px, env(safe-area-inset-right));
-    width:19px; height:19px; border-radius:50%;
-    background: var(--panel-2); border:1px solid var(--border-strong); color: var(--text-dim);
-    display:flex; align-items:center; justify-content:center; font-size:8px; cursor:pointer;
-    opacity:0.55; transition: opacity .15s; z-index:3;
-  }
-  .focus-exit:hover{ opacity:1; }
-  .focus-playpause{
-    position:absolute; bottom: max(34px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
-    width:56px; height:56px; border-radius:50%;
-    background: var(--accent-grad); border:none; color:#0a0a0f; font-size:20px;
+    position:absolute; top: calc(env(safe-area-inset-top) + 14px); right: calc(env(safe-area-inset-right) + 18px);
+    width:34px; height:34px; border-radius:50%;
+    background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.16); color: var(--text-dim);
     display:flex; align-items:center; justify-content:center; cursor:pointer;
-    box-shadow: 0 10px 30px -8px rgba(0,0,0,0.5); z-index:3;
+    opacity:0.85; transition: opacity .15s, transform .12s ease; z-index:3;
   }
+  .focus-exit svg{ width:15px; height:15px; }
+  .focus-exit:hover{ opacity:1; }
+  .focus-exit:active{ transform: scale(0.9); }
+  /* The "tap anywhere" hint lives at the bottom now, and there's no separate
+     play/pause button cluttering the view — tapping anywhere already toggles
+     playback, so a dedicated button was redundant chrome. */
   .focus-hint{
-    position:absolute; top: max(28px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
+    position:absolute; bottom: calc(env(safe-area-inset-bottom) + 34px); left:50%; transform:translateX(-50%);
     background: rgba(0,0,0,0.55); color:#fff; padding:10px 18px; border-radius:999px;
     font-size:13px; font-weight:500; white-space:nowrap; pointer-events:none;
     opacity:0; transition: opacity .3s ease; z-index:3;
   }
   .focus-hint.show{ opacity:1; }
 
-  @media (max-width: 720px){
-    h1{ font-size:36px; }
-    .stats-grid{ grid-template-columns: repeat(2,1fr); }
-    .panel-row{ grid-template-columns: 1fr; }
-    .controls-grid{ grid-template-columns:1fr; gap:16px; }
+  @media (max-width: 380px){
+    .word-display{ font-size: 42px; }
   }
 </style>
 </head>
@@ -392,108 +417,120 @@
   </div>
 </div>
 
-<div class="wrap">
+<div class="app-topbar">
+  <div class="topbar-mark"><span class="dot-mark"></span><span>Citolex</span></div>
+  <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+  </button>
+</div>
 
-  <div class="reader-card">
-    <div class="reader-stage">
-      <button class="focus-btn" id="focusBtn" title="Focus mode">⛶</button>
-      <div class="orp-guides"></div>
-      <div class="word-display" id="wordDisplay"><span class="pre" id="prePart"></span><span class="pivot" id="pivotPart"></span><span class="post" id="postPart"></span></div>
+<div class="reader-hero">
+  <div class="reader-stage">
+    <button class="icon-btn ghost" id="focusBtn" title="Fullscreen" aria-label="Fullscreen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"></path><path d="M21 8V5a2 2 0 0 0-2-2h-3"></path><path d="M3 16v3a2 2 0 0 0 2 2h3"></path><path d="M16 21h3a2 2 0 0 0 2-2v-3"></path></svg>
+    </button>
+    <div class="orp-guides"></div>
+    <div class="word-display" id="wordDisplay"><span class="pre" id="prePart"></span><span class="pivot" id="pivotPart"></span><span class="post" id="postPart"></span></div>
+  </div>
+  <div class="progress-row">
+    <span class="progress-label" id="wordsRead">0 words</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <span class="progress-label" id="timeLeft">0:00 left</span>
+  </div>
+</div>
+
+<div class="bottom-bar">
+  <button class="icon-btn" id="addTextBtn" title="Add text" aria-label="Add text">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+  </button>
+  <div class="transport-main">
+    <button class="icon-btn" id="restartBtn" title="Restart" aria-label="Restart">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"></path><path d="M3 4v5h5"></path></svg>
+    </button>
+    <button class="icon-btn" id="backBtn" title="Back 10 words" aria-label="Back 10 words">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19 2 12l9-7v14z"></path><path d="M22 19 13 12l9-7v14z"></path></svg>
+    </button>
+    <button class="play-btn" id="playBtn" title="Play/Pause" aria-label="Play or pause">
+      <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+    </button>
+    <button class="icon-btn" id="forwardBtn" title="Forward 10 words" aria-label="Forward 10 words">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 5 9 7-9 7V5z"></path><path d="m2 5 9 7-9 7V5z"></path></svg>
+    </button>
+  </div>
+  <button class="icon-btn" id="ttsQuickBtn" title="Read aloud" aria-label="Toggle read aloud">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
+  </button>
+</div>
+
+<div class="sheet-backdrop" id="addSheetBackdrop"></div>
+<div class="sheet" id="addSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h2>Add text</h2>
+    <button class="sheet-done" id="addSheetDone">Done</button>
+  </div>
+
+  <div class="segmented" id="sourceTabs">
+    <div class="seg active" data-tab="paste">Paste</div>
+    <div class="seg" data-tab="file">File</div>
+    <div class="seg" data-tab="url">URL</div>
+  </div>
+
+  <div class="tab-panel" data-panel="paste">
+    <textarea class="textarea-real" id="pasteInput" placeholder="Paste an article, essay, or any text here..."></textarea>
+  </div>
+  <div class="tab-panel" data-panel="file" style="display:none">
+    <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.pdf,.docx,.epub,text/plain,application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+    <p class="hint">Accepts .txt, .md, .pdf, .docx, and .epub — everything is parsed right on your device, nothing is uploaded anywhere.</p>
+  </div>
+  <div class="tab-panel" data-panel="url" style="display:none">
+    <div class="url-row">
+      <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/article">
+      <button class="action-btn" id="urlFetchBtn">Fetch</button>
     </div>
-    <div class="reader-controls">
-      <div class="progress-row">
-        <span class="progress-label" id="wordsRead">0 words</span>
-        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-        <span class="progress-label" id="timeLeft">0:00 left</span>
-      </div>
+    <p class="hint">Only works for pages that allow cross-origin requests — most sites block this. Paste the text instead if it fails.</p>
+  </div>
 
-      <div class="transport">
-        <button id="restartBtn" title="Restart">↺</button>
-        <button id="backBtn" title="Back 10 words">⏮</button>
-        <button class="play" id="playBtn" title="Play/Pause">▶</button>
-        <button id="forwardBtn" title="Forward 10 words">⏭</button>
-      </div>
+  <button class="load-btn" id="loadTextBtn">Load into reader</button>
+  <p class="status-msg" id="sourceStatus"></p>
+</div>
 
-      <div class="controls-grid">
-        <div class="slider-group">
-          <label>Speed <b><input type="number" id="wpmVal" class="wpm-input" min="100" max="900" step="10" value="420"> wpm</b></label>
-          <input type="range" min="100" max="900" step="10" value="420" id="wpmSlider">
-        </div>
-        <div class="slider-group">
-          <label>Font size <b><input type="number" id="fontVal" class="wpm-input" min="10" max="88" step="1" value="54"> px</b></label>
-          <input type="range" min="10" max="88" step="1" value="54" id="fontSlider">
-        </div>
-        <div class="slider-group">
-          <label>Theme</label>
-          <select id="themeSelect" class="theme-select">
-            <option value="default">Violet (default)</option>
-            <option value="midnight">Midnight Blue</option>
-            <option value="forest">Forest</option>
-            <option value="sunset">Sunset</option>
-            <option value="mono">Mono</option>
-            <option value="highcontrast">High Contrast</option>
-          </select>
-        </div>
-        <div class="tts-toggle">
-          <span>Read aloud</span>
-          <label class="switch">
-            <input type="checkbox" id="ttsToggle">
-            <span class="slider-pill"></span>
-          </label>
-        </div>
-      </div>
+<div class="sheet-backdrop" id="settingsSheetBackdrop"></div>
+<div class="sheet" id="settingsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h2>Settings</h2>
+    <button class="sheet-done" id="settingsSheetDone">Done</button>
+  </div>
+
+  <div class="sheet-section">
+    <div class="slider-group">
+      <label>Speed <b><input type="number" id="wpmVal" class="wpm-input" min="100" max="900" step="10" value="420"> wpm</b></label>
+      <input type="range" min="100" max="900" step="10" value="420" id="wpmSlider">
+    </div>
+    <div class="slider-group">
+      <label>Font size <b><input type="number" id="fontVal" class="wpm-input" min="10" max="88" step="1" value="54"> px</b></label>
+      <input type="range" min="10" max="88" step="1" value="54" id="fontSlider">
+    </div>
+    <div class="slider-group" style="margin-bottom:0;">
+      <label>Theme</label>
+      <select id="themeSelect" class="theme-select">
+        <option value="default">Forest (default)</option>
+        <option value="violet">Violet</option>
+        <option value="midnight">Midnight Blue</option>
+        <option value="sunset">Sunset</option>
+        <option value="mono">Mono</option>
+        <option value="highcontrast">High Contrast</option>
+      </select>
     </div>
   </div>
 
-  <div class="panel" style="margin-bottom:22px;">
-    <h3>Source
-      <div class="tabs" id="sourceTabs">
-        <div class="tab active" data-tab="paste">Paste</div>
-        <div class="tab" data-tab="file">File</div>
-        <div class="tab" data-tab="url">URL</div>
-      </div>
-    </h3>
-
-    <div class="tab-panel" data-panel="paste">
-      <textarea class="textarea-real" id="pasteInput" placeholder="Paste an article, essay, or any text here..."></textarea>
+  <div class="sheet-section">
+    <div class="sheet-section-label">Voice + playback</div>
+    <div class="tts-row">
+      <span>Read aloud</span>
+      <label class="switch"><input type="checkbox" id="ttsToggle"><span class="slider-pill"></span></label>
     </div>
-    <div class="tab-panel" data-panel="file" style="display:none">
-      <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.pdf,.docx,.epub,text/plain,application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-      <p class="hint">Accepts .txt, .md, .pdf, .docx, and .epub — everything is parsed right in your browser, nothing is uploaded anywhere.</p>
-    </div>
-    <div class="tab-panel" data-panel="url" style="display:none">
-      <div class="url-row">
-        <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/article">
-        <button class="action-btn" id="urlFetchBtn">Fetch</button>
-      </div>
-      <p class="hint">Only works for pages that allow cross-origin requests — most sites block this from a browser. Paste the text instead if it fails.</p>
-    </div>
-
-    <button class="load-btn" id="loadTextBtn">Load into reader</button>
-    <p class="status-msg" id="sourceStatus"></p>
-  </div>
-
-  <div class="stats-grid">
-    <div class="stat-card">
-      <div class="stat-label">Current pace</div>
-      <div class="stat-value accent"><span id="paceStat">420</span> <small>wpm</small></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Time saved</div>
-      <div class="stat-value"><span id="timeSavedStat">0.0</span> <small>min</small></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Words read</div>
-      <div class="stat-value"><span id="wordsReadStat">0 / 0</span></div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Sessions today</div>
-      <div class="stat-value"><span id="sessionsStat">0</span></div>
-    </div>
-  </div>
-
-  <div class="panel" style="margin-top:22px;">
-    <h3>Voice + playback</h3>
     <div class="voice-row">
       <span>Voice</span>
       <select id="voiceSelect" class="voice-select"></select>
@@ -515,17 +552,37 @@
     </div>
   </div>
 
-  <p class="name-note">citolex.com</p>
-
+  <div class="sheet-section">
+    <div class="sheet-section-label">Stats</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Current pace</div>
+        <div class="stat-value accent"><span id="paceStat">420</span> <small>wpm</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Time saved</div>
+        <div class="stat-value"><span id="timeSavedStat">0.0</span> <small>min</small></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Words read</div>
+        <div class="stat-value"><span id="wordsReadStat">0 / 0</span></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Sessions today</div>
+        <div class="stat-value"><span id="sessionsStat">0</span></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="focus-overlay" id="focusOverlay">
-  <button class="focus-exit" id="focusExitBtn" title="Exit focus mode (Esc)">✕</button>
+  <button class="focus-exit" id="focusExitBtn" title="Exit focus mode (Esc)" aria-label="Exit focus mode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
+  </button>
   <div class="focus-hint" id="focusHint">Tap anywhere to play/pause</div>
   <div class="focus-word-display" id="focusWordDisplay">
     <span class="pre" id="focusPrePart"></span><span class="pivot" id="focusPivotPart"></span><span class="post" id="focusPostPart"></span>
   </div>
-  <button class="focus-playpause" id="focusPlayBtn" title="Play/Pause">▶</button>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -607,15 +664,16 @@
   const focusBtn = document.getElementById('focusBtn');
   const focusOverlay = document.getElementById('focusOverlay');
   const focusExitBtn = document.getElementById('focusExitBtn');
-  const focusPlayBtn = document.getElementById('focusPlayBtn');
   const focusHint = document.getElementById('focusHint');
   const welcomeOverlay = document.getElementById('welcomeOverlay');
   const welcomeCloseBtn = document.getElementById('welcomeCloseBtn');
   const welcomeDontShow = document.getElementById('welcomeDontShow');
   const playBtn = document.getElementById('playBtn');
+  const playIcon = document.getElementById('playIcon');
   const restartBtn = document.getElementById('restartBtn');
   const backBtn = document.getElementById('backBtn');
   const forwardBtn = document.getElementById('forwardBtn');
+  const ttsQuickBtn = document.getElementById('ttsQuickBtn');
   const wpmVal = document.getElementById('wpmVal');
   const wpmSlider = document.getElementById('wpmSlider');
   function getWpm(){
@@ -651,6 +709,15 @@
   const wordsReadStat = document.getElementById('wordsReadStat');
   const sessionsStat = document.getElementById('sessionsStat');
 
+  const settingsBtn = document.getElementById('settingsBtn');
+  const addTextBtn = document.getElementById('addTextBtn');
+  const addSheet = document.getElementById('addSheet');
+  const addSheetBackdrop = document.getElementById('addSheetBackdrop');
+  const addSheetDone = document.getElementById('addSheetDone');
+  const settingsSheet = document.getElementById('settingsSheet');
+  const settingsSheetBackdrop = document.getElementById('settingsSheetBackdrop');
+  const settingsSheetDone = document.getElementById('settingsSheetDone');
+
   let words = [];
   let idx = 0;
   let playing = false;
@@ -669,8 +736,29 @@
   const ttsSupported = isNativeApp ? !!NativeTts : ('speechSynthesis' in window);
   if (!ttsSupported) {
     ttsToggle.disabled = true;
-    document.querySelector('.tts-toggle span').textContent = 'Read aloud (not supported here)';
+    ttsQuickBtn.style.opacity = '0.4';
   }
+
+  /* ---- bottom sheets ---- */
+  function openSheet(sheet, backdrop){
+    sheet.classList.add('open');
+    backdrop.classList.add('open');
+  }
+  function closeSheet(sheet, backdrop){
+    sheet.classList.remove('open');
+    backdrop.classList.remove('open');
+  }
+  addTextBtn.addEventListener('click', () => openSheet(addSheet, addSheetBackdrop));
+  addSheetDone.addEventListener('click', () => closeSheet(addSheet, addSheetBackdrop));
+  addSheetBackdrop.addEventListener('click', () => closeSheet(addSheet, addSheetBackdrop));
+  settingsBtn.addEventListener('click', () => openSheet(settingsSheet, settingsSheetBackdrop));
+  settingsSheetDone.addEventListener('click', () => closeSheet(settingsSheet, settingsSheetBackdrop));
+  settingsSheetBackdrop.addEventListener('click', () => closeSheet(settingsSheet, settingsSheetBackdrop));
+  ttsQuickBtn.addEventListener('click', () => {
+    if (ttsToggle.disabled) return;
+    ttsToggle.checked = !ttsToggle.checked;
+    ttsToggle.dispatchEvent(new Event('change'));
+  });
 
   function pivotIndex(word){
     const len = word.length;
@@ -747,11 +835,11 @@
     } catch (e) { sessionsStat.textContent = '0'; }
   })();
 
+  const PLAY_PATH = 'M8 5v14l11-7z';
+  const PAUSE_PATH = 'M7 5h4v14H7zM13 5h4v14h-4z';
   function setPlayingUI(isPlaying){
     playing = isPlaying;
-    const icon = isPlaying ? '❚❚' : '▶';
-    playBtn.textContent = icon;
-    focusPlayBtn.textContent = icon;
+    playIcon.setAttribute('d', isPlaying ? PAUSE_PATH : PLAY_PATH);
   }
 
   function stopAll(){
@@ -996,7 +1084,6 @@
     const focusBg = cs.getPropertyValue('--focus-bg').trim();
     const accent = cs.getPropertyValue('--accent').trim();
     const text = cs.getPropertyValue('--text').trim();
-    const faint = cs.getPropertyValue('--text-faint').trim();
     // Only the overlay itself gets the inline background — NOT
     // document.documentElement / document.body. This function runs on every
     // theme change (via applyTheme, including page load), so setting the
@@ -1008,8 +1095,6 @@
     focusOverlay.style.background = focusBg;
     focusPivotPart.style.color = accent;
     focusWordDisplay.style.color = text;
-    const exitBtn = document.getElementById('focusExitBtn');
-    if (exitBtn) exitBtn.style.color = faint;
   }
 
   function applyTheme(name){
@@ -1077,10 +1162,10 @@
     voiceSelect.innerHTML = '<option>Not supported</option>';
   }
 
-  /* ---- source tabs ---- */
-  document.querySelectorAll('#sourceTabs .tab').forEach(tab => {
+  /* ---- source segmented control ---- */
+  document.querySelectorAll('#sourceTabs .seg').forEach(tab => {
     tab.addEventListener('click', () => {
-      document.querySelectorAll('#sourceTabs .tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('#sourceTabs .seg').forEach(t => t.classList.remove('active'));
       tab.classList.add('active');
       const name = tab.dataset.tab;
       document.querySelectorAll('.tab-panel').forEach(p => {
@@ -1110,7 +1195,7 @@
       }
       const n = fileTextContent.trim().split(/\s+/).filter(Boolean).length;
       if (!n) { sourceStatus.textContent = "Couldn't find any readable text in that file."; return; }
-      sourceStatus.textContent = 'Loaded ' + file.name + ' (' + n + ' words) — click "Load into reader".';
+      sourceStatus.textContent = 'Loaded ' + file.name + ' (' + n + ' words) — tap "Load into reader".';
     } catch (e) {
       sourceStatus.textContent = 'Could not read that file (' + (e && e.message ? e.message : 'parsing error') + ').';
     }
@@ -1132,14 +1217,14 @@
         .trim();
       urlFetchedText = text;
       const n = text.split(' ').filter(Boolean).length;
-      sourceStatus.textContent = 'Fetched ~' + n + ' words — click "Load into reader".';
+      sourceStatus.textContent = 'Fetched ~' + n + ' words — tap "Load into reader".';
     } catch (e) {
       sourceStatus.textContent = "Couldn't fetch that URL — most sites block cross-origin requests from a browser. Paste the text instead.";
     }
   });
 
   loadTextBtn.addEventListener('click', () => {
-    const active = document.querySelector('#sourceTabs .tab.active').dataset.tab;
+    const active = document.querySelector('#sourceTabs .seg.active').dataset.tab;
     let text = '';
     if (active === 'paste') text = pasteInput.value;
     else if (active === 'file') text = fileTextContent;
@@ -1148,6 +1233,7 @@
     if (!text) { sourceStatus.textContent = 'Nothing to load yet.'; return; }
     loadWords(text);
     sourceStatus.textContent = 'Loaded ' + words.length + ' words into the reader.';
+    setTimeout(() => closeSheet(addSheet, addSheetBackdrop), 500);
   });
 
   /* ---- first-time welcome modal ---- */
@@ -1202,9 +1288,8 @@
   }
   focusBtn.addEventListener('click', enterFocusMode);
   focusExitBtn.addEventListener('click', (e) => { e.stopPropagation(); exitFocusMode(); });
-  focusPlayBtn.addEventListener('click', (e) => { e.stopPropagation(); playBtn.click(); });
   focusOverlay.addEventListener('click', (e) => {
-    if (e.target === focusExitBtn || e.target === focusPlayBtn) return;
+    if (e.target === focusExitBtn) return;
     playBtn.click();
   });
   document.addEventListener('keydown', (e) => {
@@ -1220,7 +1305,7 @@
   });
 
   /* ---- initial load ---- */
-  const defaultText = "Citolex flashes text one word at a time so your eyes never have to move across a line, letting you read faster. Turn on read aloud and a natural voice keeps pace, word for word, so you can listen instead of look. The optimal recognition point stays centered in red so recognition is instant and effortless. Paste your own article, upload a text file, or try a link above to see how fast you can go.";
+  const defaultText = "Citolex flashes text one word at a time so your eyes never have to move across a line, letting you read faster. Turn on read aloud and a natural voice keeps pace, word for word, so you can listen instead of look. The optimal recognition point stays centered in the accent color so recognition is instant and effortless. Paste your own article, upload a text file, or try a link to see how fast you can go.";
   pasteInput.value = defaultText;
   loadWords(defaultText);
 
@@ -1234,10 +1319,9 @@
       const res = await SharedText.consume();
       if (res && res.text) {
         pasteInput.value = res.text;
-        document.querySelector('#sourceTabs .tab[data-tab="paste"]').click();
+        document.querySelector('#sourceTabs .seg[data-tab="paste"]').click();
         loadWords(res.text);
         sourceStatus.textContent = 'Loaded shared text (' + words.length + ' words) — ready to read.';
-        document.querySelector('.reader-card').scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     } catch (e) { /* no shared text waiting, nothing to do */ }
   }
