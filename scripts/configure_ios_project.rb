@@ -118,6 +118,7 @@ share_file_refs = project.main_group.new_file(File.join(share_dir, 'ShareViewCon
 share_target.add_file_references([share_file_refs])
 
 share_target.build_configurations.each do |config|
+  config.build_settings['PRODUCT_NAME'] = 'CitolexShare'
   config.build_settings['PRODUCT_BUNDLE_IDENTIFIER'] = BUNDLE_ID_SHARE
   config.build_settings['INFOPLIST_FILE'] = 'CitolexShare/Info.plist'
   config.build_settings['CODE_SIGN_ENTITLEMENTS'] = 'CitolexShare/CitolexShare.entitlements'
