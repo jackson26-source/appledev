@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <title>Citolex — speed reading, reimagined</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -97,7 +97,12 @@
     overscroll-behavior-y: none;
     transition: background .25s, color .25s;
     padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    /* No pinch/double-tap zoom anywhere in the app — there's nothing to zoom
+       into, and on a native reading app it just gets triggered by accident
+       while tapping through the word display or fullscreen. */
+    touch-action: manipulation;
   }
+  .focus-overlay, .word-display, .focus-word-display{ touch-action: manipulation; }
 
   /* Native-feeling press feedback on every tappable control, in one place. */
   button{ font-family:inherit; -webkit-tap-highlight-color:transparent; }
@@ -199,6 +204,18 @@
   }
   .progress-fill{ height:100%; width: 0%; background: var(--accent); border-radius:999px; transition: width .15s linear; }
   .progress-label{ font-size:11.5px; color: var(--text-faint); font-variant-numeric: tabular-nums; min-width: 78px; text-align:right; }
+
+  /* ---- inline sections under the reader — Add text / Settings live here,
+     in the page's normal flow, instead of hidden behind a sheet. Fills the
+     empty space below the reader stage with content that used to require
+     an extra tap to reach. ---- */
+  .page-sections{ max-width:640px; margin:0 auto; padding: 22px 14px 4px; display:flex; flex-direction:column; gap:14px; }
+  .page-section{
+    background: var(--panel); border:1px solid var(--border); border-radius: var(--radius);
+    padding: 18px 18px 20px;
+  }
+  .section-head{ margin-bottom:16px; }
+  .section-head h2{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color: var(--text-dim); }
 
   /* ---- persistent bottom control bar — the "mini player" pattern from
      Music/Podcasts/Spotify: always in thumb reach, no scrolling required ---- */
@@ -349,23 +366,26 @@
   .stat-value small{ font-size:13px; color: var(--text-dim); font-weight:500; }
   .stat-value.accent{ color: var(--accent-2); }
 
-  /* ---- FOCUS / READ MODE ---- */
+  /* ---- FOCUS / READ MODE ----
+     Uses the exact same gradient formula + base color as the windowed body
+     background (var(--bg), not a separate --focus-bg) so fullscreen reads
+     as a seamless continuation of the page instead of a different surface. */
   .focus-overlay{
     position:fixed; inset:0; z-index:1000;
     background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
                 radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%),
-                var(--focus-bg);
+                var(--bg);
     display:none; align-items:center; justify-content:center; flex-direction:column;
     cursor:pointer;
   }
   .focus-overlay.active{ display:flex; }
-  .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
-  .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
-  .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--focus-bg) !important; }
-  .focus-overlay::backdrop{ background: var(--focus-bg) !important; }
-  html:fullscreen, body:fullscreen{ background: var(--focus-bg) !important; }
-  html:-webkit-full-screen, body:-webkit-full-screen{ background: var(--focus-bg) !important; }
-  .focus-overlay::-webkit-backdrop{ background: var(--focus-bg); }
+  .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
+  .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
+  .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
+  .focus-overlay::backdrop{ background: var(--bg) !important; }
+  html:fullscreen, body:fullscreen{ background: var(--bg) !important; }
+  html:-webkit-full-screen, body:-webkit-full-screen{ background: var(--bg) !important; }
+  .focus-overlay::-webkit-backdrop{ background: var(--bg); }
   .focus-word-display{
     display:flex; align-items:baseline; justify-content:center; width:96%;
     font-size: clamp(40px, 9vw, 128px); font-weight: 700; letter-spacing: -0.01em;
@@ -439,6 +459,111 @@
   </div>
 </div>
 
+<div class="page-sections">
+  <div class="page-section" id="addSection">
+    <div class="section-head"><h2>Add text</h2></div>
+
+    <div class="segmented" id="sourceTabs">
+      <div class="seg active" data-tab="paste">Paste</div>
+      <div class="seg" data-tab="file">File</div>
+      <div class="seg" data-tab="url">URL</div>
+    </div>
+
+    <div class="tab-panel" data-panel="paste">
+      <textarea class="textarea-real" id="pasteInput" placeholder="Paste an article, essay, or any text here..."></textarea>
+    </div>
+    <div class="tab-panel" data-panel="file" style="display:none">
+      <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.pdf,.docx,.epub,text/plain,application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+      <p class="hint">Accepts .txt, .md, .pdf, .docx, and .epub — everything is parsed right on your device, nothing is uploaded anywhere.</p>
+    </div>
+    <div class="tab-panel" data-panel="url" style="display:none">
+      <div class="url-row">
+        <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/article">
+        <button class="action-btn" id="urlFetchBtn">Fetch</button>
+      </div>
+      <p class="hint">Only works for pages that allow cross-origin requests — most sites block this. Paste the text instead if it fails.</p>
+    </div>
+
+    <button class="load-btn" id="loadTextBtn">Load into reader</button>
+    <p class="status-msg" id="sourceStatus"></p>
+  </div>
+
+  <div class="page-section" id="settingsSection">
+    <div class="section-head"><h2>Settings</h2></div>
+
+    <div class="sheet-section">
+      <div class="slider-group">
+        <label>Speed <b><input type="number" id="wpmVal" class="wpm-input" min="100" max="900" step="10" value="420"> wpm</b></label>
+        <input type="range" min="100" max="900" step="10" value="420" id="wpmSlider">
+      </div>
+      <div class="slider-group">
+        <label>Font size <b><input type="number" id="fontVal" class="wpm-input" min="10" max="88" step="1" value="54"> px</b></label>
+        <input type="range" min="10" max="88" step="1" value="54" id="fontSlider">
+      </div>
+      <div class="slider-group" style="margin-bottom:0;">
+        <label>Theme</label>
+        <select id="themeSelect" class="theme-select">
+          <option value="default">Forest (default)</option>
+          <option value="violet">Violet</option>
+          <option value="midnight">Midnight Blue</option>
+          <option value="sunset">Sunset</option>
+          <option value="mono">Mono</option>
+          <option value="highcontrast">High Contrast</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-label">Voice + playback</div>
+      <div class="tts-row">
+        <span>Read aloud</span>
+        <label class="switch"><input type="checkbox" id="ttsToggle"><span class="slider-pill"></span></label>
+      </div>
+      <div class="voice-row">
+        <span>Voice</span>
+        <select id="voiceSelect" class="voice-select"></select>
+      </div>
+      <div class="voice-row">
+        <span>Playback speed</span>
+        <div class="rate-wrap">
+          <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
+          <span id="rateVal">1.0×</span>
+        </div>
+      </div>
+      <div class="voice-row">
+        <span>Sync with word flash</span>
+        <label class="switch"><input type="checkbox" id="syncToggle" checked><span class="slider-pill"></span></label>
+      </div>
+      <div class="voice-row">
+        <span>Auto-pause on punctuation</span>
+        <label class="switch"><input type="checkbox" id="punctToggle" checked><span class="slider-pill"></span></label>
+      </div>
+    </div>
+
+    <div class="sheet-section">
+      <div class="sheet-section-label">Stats</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Current pace</div>
+          <div class="stat-value accent"><span id="paceStat">420</span> <small>wpm</small></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Time saved</div>
+          <div class="stat-value"><span id="timeSavedStat">0.0</span> <small>min</small></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Words read</div>
+          <div class="stat-value"><span id="wordsReadStat">0 / 0</span></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Sessions today</div>
+          <div class="stat-value"><span id="sessionsStat">0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="bottom-bar">
   <button class="icon-btn" id="addTextBtn" title="Add text" aria-label="Add text">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
@@ -460,119 +585,6 @@
   <button class="icon-btn" id="ttsQuickBtn" title="Read aloud" aria-label="Toggle read aloud">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
   </button>
-</div>
-
-<div class="sheet-backdrop" id="addSheetBackdrop"></div>
-<div class="sheet" id="addSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-head">
-    <h2>Add text</h2>
-    <button class="sheet-done" id="addSheetDone">Done</button>
-  </div>
-
-  <div class="segmented" id="sourceTabs">
-    <div class="seg active" data-tab="paste">Paste</div>
-    <div class="seg" data-tab="file">File</div>
-    <div class="seg" data-tab="url">URL</div>
-  </div>
-
-  <div class="tab-panel" data-panel="paste">
-    <textarea class="textarea-real" id="pasteInput" placeholder="Paste an article, essay, or any text here..."></textarea>
-  </div>
-  <div class="tab-panel" data-panel="file" style="display:none">
-    <input type="file" id="fileInput" class="file-input" accept=".txt,.md,.pdf,.docx,.epub,text/plain,application/pdf,application/epub+zip,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-    <p class="hint">Accepts .txt, .md, .pdf, .docx, and .epub — everything is parsed right on your device, nothing is uploaded anywhere.</p>
-  </div>
-  <div class="tab-panel" data-panel="url" style="display:none">
-    <div class="url-row">
-      <input type="url" id="urlInput" class="url-input" placeholder="https://example.com/article">
-      <button class="action-btn" id="urlFetchBtn">Fetch</button>
-    </div>
-    <p class="hint">Only works for pages that allow cross-origin requests — most sites block this. Paste the text instead if it fails.</p>
-  </div>
-
-  <button class="load-btn" id="loadTextBtn">Load into reader</button>
-  <p class="status-msg" id="sourceStatus"></p>
-</div>
-
-<div class="sheet-backdrop" id="settingsSheetBackdrop"></div>
-<div class="sheet" id="settingsSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-head">
-    <h2>Settings</h2>
-    <button class="sheet-done" id="settingsSheetDone">Done</button>
-  </div>
-
-  <div class="sheet-section">
-    <div class="slider-group">
-      <label>Speed <b><input type="number" id="wpmVal" class="wpm-input" min="100" max="900" step="10" value="420"> wpm</b></label>
-      <input type="range" min="100" max="900" step="10" value="420" id="wpmSlider">
-    </div>
-    <div class="slider-group">
-      <label>Font size <b><input type="number" id="fontVal" class="wpm-input" min="10" max="88" step="1" value="54"> px</b></label>
-      <input type="range" min="10" max="88" step="1" value="54" id="fontSlider">
-    </div>
-    <div class="slider-group" style="margin-bottom:0;">
-      <label>Theme</label>
-      <select id="themeSelect" class="theme-select">
-        <option value="default">Forest (default)</option>
-        <option value="violet">Violet</option>
-        <option value="midnight">Midnight Blue</option>
-        <option value="sunset">Sunset</option>
-        <option value="mono">Mono</option>
-        <option value="highcontrast">High Contrast</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="sheet-section">
-    <div class="sheet-section-label">Voice + playback</div>
-    <div class="tts-row">
-      <span>Read aloud</span>
-      <label class="switch"><input type="checkbox" id="ttsToggle"><span class="slider-pill"></span></label>
-    </div>
-    <div class="voice-row">
-      <span>Voice</span>
-      <select id="voiceSelect" class="voice-select"></select>
-    </div>
-    <div class="voice-row">
-      <span>Playback speed</span>
-      <div class="rate-wrap">
-        <input type="range" id="rateSlider" min="0.5" max="2" step="0.1" value="1">
-        <span id="rateVal">1.0×</span>
-      </div>
-    </div>
-    <div class="voice-row">
-      <span>Sync with word flash</span>
-      <label class="switch"><input type="checkbox" id="syncToggle" checked><span class="slider-pill"></span></label>
-    </div>
-    <div class="voice-row">
-      <span>Auto-pause on punctuation</span>
-      <label class="switch"><input type="checkbox" id="punctToggle" checked><span class="slider-pill"></span></label>
-    </div>
-  </div>
-
-  <div class="sheet-section">
-    <div class="sheet-section-label">Stats</div>
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Current pace</div>
-        <div class="stat-value accent"><span id="paceStat">420</span> <small>wpm</small></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Time saved</div>
-        <div class="stat-value"><span id="timeSavedStat">0.0</span> <small>min</small></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Words read</div>
-        <div class="stat-value"><span id="wordsReadStat">0 / 0</span></div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Sessions today</div>
-        <div class="stat-value"><span id="sessionsStat">0</span></div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div class="focus-overlay" id="focusOverlay">
@@ -711,12 +723,8 @@
 
   const settingsBtn = document.getElementById('settingsBtn');
   const addTextBtn = document.getElementById('addTextBtn');
-  const addSheet = document.getElementById('addSheet');
-  const addSheetBackdrop = document.getElementById('addSheetBackdrop');
-  const addSheetDone = document.getElementById('addSheetDone');
-  const settingsSheet = document.getElementById('settingsSheet');
-  const settingsSheetBackdrop = document.getElementById('settingsSheetBackdrop');
-  const settingsSheetDone = document.getElementById('settingsSheetDone');
+  const addSection = document.getElementById('addSection');
+  const settingsSection = document.getElementById('settingsSection');
 
   let words = [];
   let idx = 0;
@@ -739,21 +747,14 @@
     ttsQuickBtn.style.opacity = '0.4';
   }
 
-  /* ---- bottom sheets ---- */
-  function openSheet(sheet, backdrop){
-    sheet.classList.add('open');
-    backdrop.classList.add('open');
+  /* ---- Add text / Settings now live inline on the page, filling the space
+     under the reader, instead of behind a sheet — the topbar/bottom-bar
+     icons just scroll to them so they're still one tap away. ---- */
+  function scrollToSection(section){
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-  function closeSheet(sheet, backdrop){
-    sheet.classList.remove('open');
-    backdrop.classList.remove('open');
-  }
-  addTextBtn.addEventListener('click', () => openSheet(addSheet, addSheetBackdrop));
-  addSheetDone.addEventListener('click', () => closeSheet(addSheet, addSheetBackdrop));
-  addSheetBackdrop.addEventListener('click', () => closeSheet(addSheet, addSheetBackdrop));
-  settingsBtn.addEventListener('click', () => openSheet(settingsSheet, settingsSheetBackdrop));
-  settingsSheetDone.addEventListener('click', () => closeSheet(settingsSheet, settingsSheetBackdrop));
-  settingsSheetBackdrop.addEventListener('click', () => closeSheet(settingsSheet, settingsSheetBackdrop));
+  addTextBtn.addEventListener('click', () => scrollToSection(addSection));
+  settingsBtn.addEventListener('click', () => scrollToSection(settingsSection));
   ttsQuickBtn.addEventListener('click', () => {
     if (ttsToggle.disabled) return;
     ttsToggle.checked = !ttsToggle.checked;
@@ -1233,7 +1234,7 @@
     if (!text) { sourceStatus.textContent = 'Nothing to load yet.'; return; }
     loadWords(text);
     sourceStatus.textContent = 'Loaded ' + words.length + ' words into the reader.';
-    setTimeout(() => closeSheet(addSheet, addSheetBackdrop), 500);
+    setTimeout(() => { document.querySelector('.reader-hero').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 400);
   });
 
   /* ---- first-time welcome modal ---- */
@@ -1279,12 +1280,15 @@
     }
   }
   function maybeShowFocusHint(){
+    // _v2: the hint moved to the bottom of the screen in this update, so the
+    // key is bumped to show it fresh once more even for people who already
+    // dismissed the old (top-positioned) version.
     try {
-      if (localStorage.getItem('citolex_seen_focus_hint') === '1') return;
+      if (localStorage.getItem('citolex_seen_focus_hint_v2') === '1') return;
     } catch(e){}
     focusHint.classList.add('show');
     setTimeout(() => { focusHint.classList.remove('show'); }, 3000);
-    try { localStorage.setItem('citolex_seen_focus_hint', '1'); } catch(e){}
+    try { localStorage.setItem('citolex_seen_focus_hint_v2', '1'); } catch(e){}
   }
   focusBtn.addEventListener('click', enterFocusMode);
   focusExitBtn.addEventListener('click', (e) => { e.stopPropagation(); exitFocusMode(); });
