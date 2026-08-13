@@ -96,7 +96,11 @@
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
     transition: background .25s, color .25s;
-    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+    /* Generous clearance under all scrollable content so the fixed bottom
+       bar (mini player) never overlaps the end of the Settings section —
+       taller than the bar's own rendered height (~78px) with real margin
+       to spare, not just a bare minimum that clips on some devices. */
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
     /* No pinch/double-tap zoom anywhere in the app — there's nothing to zoom
        into, and on a native reading app it just gets triggered by accident
        while tapping through the word display or fullscreen. */
@@ -209,7 +213,8 @@
      in the page's normal flow, instead of hidden behind a sheet. Fills the
      empty space below the reader stage with content that used to require
      an extra tap to reach. ---- */
-  .page-sections{ max-width:640px; margin:0 auto; padding: 22px 14px 4px; display:flex; flex-direction:column; gap:14px; }
+  .page-sections{ max-width:640px; margin:0 auto; padding: 22px 14px 24px; display:flex; flex-direction:column; gap:14px; }
+  .bottom-spacer{ height: calc(96px + env(safe-area-inset-bottom)); flex-shrink:0; }
   .page-section{
     background: var(--panel); border:1px solid var(--border); border-radius: var(--radius);
     padding: 18px 18px 20px;
@@ -562,6 +567,11 @@
       </div>
     </div>
   </div>
+
+  <!-- Real layout space, not just body padding — guarantees the fixed
+       bottom bar can never sit over the Stats cards even if some WKWebView
+       height/overflow quirk makes body's own padding-bottom unreliable. -->
+  <div class="bottom-spacer" aria-hidden="true"></div>
 </div>
 
 <div class="bottom-bar">
@@ -1078,11 +1088,14 @@
   // context does to inheritance.
   function syncFocusColors(){
     const cs = getComputedStyle(document.body);
-    // --focus-bg is a precomputed, plain hex value per theme (no color-mix,
-    // no runtime math) — getComputedStyle on a custom property returns the
-    // literal authored string (e.g. "#0a0a0d"), not a browser-resolved
-    // rgb(...), which is exactly what we want here: just use it as-is.
-    const focusBg = cs.getPropertyValue('--focus-bg').trim();
+    // Build the exact same gradient as the windowed body background
+    // (radial glow top-left + radial glow top-right, over the base --bg
+    // color) and resolve it to literal values before setting it inline —
+    // this used to just be the flat --focus-bg color, which is why
+    // fullscreen looked like a plain solid instead of matching the window.
+    const glow1 = cs.getPropertyValue('--glow-1').trim();
+    const glow2 = cs.getPropertyValue('--glow-2').trim();
+    const bg = cs.getPropertyValue('--bg').trim();
     const accent = cs.getPropertyValue('--accent').trim();
     const text = cs.getPropertyValue('--text').trim();
     // Only the overlay itself gets the inline background — NOT
@@ -1091,9 +1104,12 @@
     // background on html/body here was leaking the fullscreen focus color
     // into the regular page background at all times, not just during
     // fullscreen. The CSS rules below (.focus-overlay:fullscreen,
-    // html:fullscreen/body:fullscreen, ::backdrop) already scope
-    // var(--focus-bg) correctly to only when fullscreen is actually active.
-    focusOverlay.style.background = focusBg;
+    // html:fullscreen/body:fullscreen, ::backdrop) already scope this
+    // correctly to only when fullscreen is actually active.
+    focusOverlay.style.background =
+      'radial-gradient(1200px 600px at 15% -10%, ' + glow1 + ', transparent 60%), ' +
+      'radial-gradient(1000px 500px at 100% 0%, ' + glow2 + ', transparent 55%), ' +
+      bg;
     focusPivotPart.style.color = accent;
     focusWordDisplay.style.color = text;
   }
