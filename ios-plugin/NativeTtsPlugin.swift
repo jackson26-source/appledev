@@ -56,6 +56,19 @@ public class NativeTtsPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
         }
         try? AVAudioSession.sharedInstance().setActive(true)
 
+        // AVSpeechSynthesizer does not interrupt an in-progress utterance
+        // when speak() is called again — it queues the new one to play
+        // *after* the current one finishes. Without this, changing WPM or
+        // voice mid-playback stacked utterances back to back while
+        // currentCall (below) only ever tracked the newest one, leaving the
+        // JS side's play/pause state completely out of sync with what was
+        // actually still speaking. stopSpeaking triggers the didCancel
+        // delegate below, which resolves and clears out whatever the
+        // previous currentCall was before we replace it further down.
+        if synthesizer.isSpeaking || synthesizer.isPaused {
+            synthesizer.stopSpeaking(at: .immediate)
+        }
+
         let utterance = AVSpeechUtterance(string: text)
 
         // Citolex's web rate slider is 0.5x-2.0x tied to WPM; AVSpeechUtterance
