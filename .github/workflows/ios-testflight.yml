@@ -32,6 +32,8 @@ jobs:
         run: gem install xcodeproj --no-document
 
       - name: Wire in native TTS, Share Extension, App Group, background audio
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: ruby scripts/configure_ios_project.rb
 
       - name: Re-run CocoaPods (picks up anything the project script touched)
@@ -71,8 +73,8 @@ jobs:
             -scheme App \
             -configuration Release \
             -archivePath "$RUNNER_TEMP/Citolex.xcarchive" \
-            -allowProvisioningUpdates \
-            DEVELOPMENT_TEAM="${{ secrets.APPLE_TEAM_ID }}" \
+            -destination "generic/platform=iOS" \
+            CODE_SIGN_STYLE=Manual \
             archive
 
       - name: Write export options
