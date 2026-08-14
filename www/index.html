@@ -800,10 +800,23 @@
         window.Capacitor.Plugins.SharedText = makeNativePluginShim('SharedText', ['consume']);
       }
     } catch (e) {}
+    try {
+      // @capacitor/status-bar is an official Capacitor plugin (not a
+      // hand-written one like NativeTts/SharedText above), but it hits the
+      // exact same no-bundler problem: its native Swift side auto-registers
+      // with the bridge via CocoaPods once listed in package.json, but the
+      // JS-side registerPlugin() call that would normally expose it on
+      // Capacitor.Plugins lives in the npm package's own JS, which this
+      // bundler-less app never runs. Same shim, same fix.
+      if (!window.Capacitor.Plugins.StatusBar) {
+        window.Capacitor.Plugins.StatusBar = makeNativePluginShim('StatusBar', ['hide', 'show']);
+      }
+    } catch (e) {}
   }
   const isNativeApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
   const NativeTts = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.NativeTts : null;
   const SharedText = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.SharedText : null;
+  const StatusBar = isNativeApp && window.Capacitor.Plugins ? window.Capacitor.Plugins.StatusBar : null;
   let nativeVoices = [];
 
   const ttsSupported = isNativeApp ? !!NativeTts : ('speechSynthesis' in window);
@@ -1361,6 +1374,12 @@
       const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
       if (req) { try { req.call(el).catch(() => {}); } catch(e){} }
     }
+    // On native, the overlay already covers the whole screen edge-to-edge,
+    // but iOS still draws its own status bar (time/battery/signal) on top of
+    // everything — there's no CSS way to cover that, it has to be hidden at
+    // the OS level. Matters most for screen recordings, where that bar
+    // otherwise shows up burned into every clip.
+    if (isNativeApp && StatusBar) { StatusBar.hide().catch(() => {}); }
     fitFocusFontSize();
     maybeShowFocusHint();
   }
@@ -1376,6 +1395,7 @@
       const exit = document.exitFullscreen || document.webkitExitFullscreen;
       if (exit) { try { exit.call(document).catch(() => {}); } catch(e){} }
     }
+    if (isNativeApp && StatusBar) { StatusBar.show().catch(() => {}); }
   }
   let focusHintTimer = null;
   function maybeShowFocusHint(){
