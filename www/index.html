@@ -537,6 +537,10 @@
         <span>Auto-pause on punctuation</span>
         <label class="switch"><input type="checkbox" id="punctToggle" checked><span class="slider-pill"></span></label>
       </div>
+      <div class="voice-row">
+        <span>Loop playback</span>
+        <label class="switch"><input type="checkbox" id="loopToggle"><span class="slider-pill"></span></label>
+      </div>
     </div>
 
     <div class="sheet-section">
@@ -705,6 +709,7 @@
   const ttsToggle = document.getElementById('ttsToggle');
   const syncToggle = document.getElementById('syncToggle');
   const punctToggle = document.getElementById('punctToggle');
+  const loopToggle = document.getElementById('loopToggle');
   const voiceSelect = document.getElementById('voiceSelect');
   const rateSlider = document.getElementById('rateSlider');
   const rateVal = document.getElementById('rateVal');
@@ -929,7 +934,19 @@
     const word = words[idx];
     idx++;
     if (idx >= words.length) {
-      timer = setTimeout(() => { setPlayingUI(false); updateStats(); recordCompletion(); }, 60000 / getWpm());
+      timer = setTimeout(() => {
+        // Loop mode restarts from the top instead of stopping — mainly for
+        // recording clips: the "pull down to exit" hint only shows on entry
+        // and on tap, not on a loop restart, so the second pass through
+        // records clean and can be spliced in over the first.
+        if (loopToggle.checked && words.length > 0) {
+          recordCompletion();
+          idx = 0;
+          if (playing) tick();
+          return;
+        }
+        setPlayingUI(false); updateStats(); recordCompletion();
+      }, 60000 / getWpm());
       return;
     }
     const wpm = getWpm();
@@ -979,6 +996,12 @@
     });
     nativeFinishListener = await NativeTts.addListener('finish', () => {
       if (!playing) return;
+      if (loopToggle.checked && words.length > 0) {
+        recordCompletion();
+        idx = 0;
+        startSpeaking();
+        return;
+      }
       idx = words.length;
       setPlayingUI(false);
       updateStats();
@@ -1035,6 +1058,12 @@
     };
     utter.onend = () => {
       if (!playing) return;
+      if (loopToggle.checked && words.length > 0) {
+        recordCompletion();
+        idx = 0;
+        startSpeaking();
+        return;
+      }
       idx = words.length;
       setPlayingUI(false);
       updateStats();
