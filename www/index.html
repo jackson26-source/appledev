@@ -405,23 +405,12 @@
   .focus-word-display .pre{ text-align:right; }
   .focus-word-display .post{ text-align:left; }
   .focus-word-display .pivot{ flex: 0 0 auto; color: var(--accent); }
-  /* Bigger and clear of the status bar / Dynamic Island: real safe-area
-     values only work with viewport-fit=cover on the meta tag above — without
-     that, env(safe-area-inset-*) silently resolves to 0 and this button ends
-     up rendered underneath the status bar regardless of any offset here. */
-  .focus-exit{
-    position:absolute; top: calc(env(safe-area-inset-top) + 14px); right: calc(env(safe-area-inset-right) + 18px);
-    width:34px; height:34px; border-radius:50%;
-    background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.16); color: var(--text-dim);
-    display:flex; align-items:center; justify-content:center; cursor:pointer;
-    opacity:0.85; transition: opacity .15s, transform .12s ease; z-index:3;
-  }
-  .focus-exit svg{ width:15px; height:15px; }
-  .focus-exit:hover{ opacity:1; }
-  .focus-exit:active{ transform: scale(0.9); }
-  /* The "tap anywhere" hint lives at the bottom now, and there's no separate
-     play/pause button cluttering the view — tapping anywhere already toggles
-     playback, so a dedicated button was redundant chrome. */
+  /* No visible exit button in fullscreen anymore — it was persistent chrome
+     sitting on top of the reading view at all times. Exiting is now purely
+     the pull-down gesture (below) plus Esc on the web version, with the
+     .focus-hint toast (still bottom-anchored) surfacing "pull down to exit"
+     on entry and again on every tap, so the affordance is taught without
+     needing to stay visible the whole time. */
   .focus-hint{
     position:absolute; bottom: calc(env(safe-area-inset-bottom) + 34px); left:50%; transform:translateX(-50%);
     background: rgba(0,0,0,0.55); color:#fff; padding:10px 18px; border-radius:999px;
@@ -603,10 +592,7 @@
 </div>
 
 <div class="focus-overlay" id="focusOverlay">
-  <button class="focus-exit" id="focusExitBtn" title="Exit focus mode (Esc)" aria-label="Exit focus mode">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="M6 6l12 12"></path></svg>
-  </button>
-  <div class="focus-hint" id="focusHint">Tap anywhere to play/pause</div>
+  <div class="focus-hint" id="focusHint">Pull down to exit fullscreen</div>
   <div class="focus-word-display" id="focusWordDisplay">
     <span class="pre" id="focusPrePart"></span><span class="pivot" id="focusPivotPart"></span><span class="post" id="focusPostPart"></span>
   </div>
@@ -690,7 +676,6 @@
   const focusWordDisplay = document.getElementById('focusWordDisplay');
   const focusBtn = document.getElementById('focusBtn');
   const focusOverlay = document.getElementById('focusOverlay');
-  const focusExitBtn = document.getElementById('focusExitBtn');
   const focusHint = document.getElementById('focusHint');
   const welcomeOverlay = document.getElementById('welcomeOverlay');
   const welcomeCloseBtn = document.getElementById('welcomeCloseBtn');
@@ -1412,11 +1397,14 @@
     focusHintTimer = setTimeout(() => { focusHint.classList.remove('show'); }, 3000);
   }
   focusBtn.addEventListener('click', enterFocusMode);
-  focusExitBtn.addEventListener('click', (e) => { e.stopPropagation(); exitFocusMode(); });
   focusOverlay.addEventListener('click', (e) => {
-    if (e.target === focusExitBtn) return;
     if (focusDragged) { focusDragged = false; return; }
+    // No exit button to route around anymore — every tap both toggles
+    // playback and re-surfaces the "pull down to exit" hint, since that
+    // gesture is now the only way out and there's no persistent chrome
+    // reminding people it exists.
     playBtn.click();
+    maybeShowFocusHint();
   });
   document.addEventListener('keydown', (e) => {
     if (!focusOverlay.classList.contains('active')) return;
@@ -1431,10 +1419,12 @@
   });
 
   /* ---- pull-down to exit fullscreen ----
-     Drag down from anywhere in the focus overlay (except the exit button)
-     to dismiss it, mirroring the Photos/Messages "pull down to close" full-
-     screen gesture. The overlay follows the finger 1:1 while dragging, then
-     either completes the exit (past the threshold) or springs back. */
+     Drag down from anywhere in the focus overlay to dismiss it, mirroring
+     the Photos/Messages "pull down to close" full-screen gesture — this is
+     now the *only* way to exit (no button, no visible chrome), so the
+     .focus-hint toast above is what teaches it. The overlay follows the
+     finger 1:1 while dragging, then either completes the exit (past the
+     threshold) or springs back. */
   let focusDragStartY = null;
   let focusDragDY = 0;
   let focusDragged = false;
@@ -1442,7 +1432,6 @@
 
   focusOverlay.addEventListener('touchstart', (e) => {
     if (!focusOverlay.classList.contains('active')) return;
-    if (e.target === focusExitBtn || (e.target.closest && e.target.closest('#focusExitBtn'))) return;
     if (e.touches.length !== 1) return;
     focusDragStartY = e.touches[0].clientY;
     focusDragDY = 0;
