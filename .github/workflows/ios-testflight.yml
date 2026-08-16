@@ -33,6 +33,13 @@ jobs:
           npx cap add ios
           npx cap sync ios
 
+
+      - name: Apply Citolex app icon (source: AppIcon/icon-1024.png)
+        run: |
+          for f in ios/App/App/Assets.xcassets/AppIcon.appiconset/*.png; do
+            cp AppIcon/icon-1024.png "$f"
+          done
+
       - name: Install Ruby gems for project scripting
         run: gem install xcodeproj --no-document
 
