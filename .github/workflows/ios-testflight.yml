@@ -102,6 +102,56 @@ jobs:
           grep -A1 "<key>UUID</key>" "$RUNNER_TEMP/share_profile.plist" || true
           grep -A1 "<key>application-identifier</key>" "$RUNNER_TEMP/share_profile.plist" || true
 
+      - name: Validate signing setup
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          check_profile() {
+            local PLIST_PATH="$1"
+            local EXPECTED_BUNDLE_ID="$2"
+            local LABEL="$3"
+
+            if [ ! -s "$PLIST_PATH" ]; then
+              echo "::error::Couldn't decode $LABEL at all in the previous step. The matching _BASE64 secret is likely not a valid base64-encoded .mobileprovision file - re-check SIGNING.md steps 6 (make sure you base64'd the .mobileprovision file itself, not the .cer or .p12)."
+              return 1
+            fi
+
+            local PROFILE_TEAM_ID=$(/usr/libexec/PlistBuddy -c "Print :TeamIdentifier:0" "$PLIST_PATH" 2>/dev/null || echo "")
+            local PROFILE_APP_ID=$(/usr/libexec/PlistBuddy -c "Print :Entitlements:application-identifier" "$PLIST_PATH" 2>/dev/null || echo "")
+            local PROFILE_BUNDLE_ID="${PROFILE_APP_ID#*.}"
+            local PROFILE_EXPIRY=$(/usr/libexec/PlistBuddy -c "Print :ExpirationDate" "$PLIST_PATH" 2>/dev/null || echo "(couldn't read)")
+
+            echo "$LABEL - Team ID:   ${PROFILE_TEAM_ID:-(couldn't read)}"
+            echo "$LABEL - Bundle ID: ${PROFILE_BUNDLE_ID:-(couldn't read)}"
+            echo "$LABEL - Expires:   $PROFILE_EXPIRY"
+
+            local FAILED=0
+            if [ -z "$PROFILE_TEAM_ID" ]; then
+              echo "::warning::Couldn't read a Team ID out of $LABEL - skipping that check, but this usually means the profile didn't decode cleanly."
+            elif [ "$PROFILE_TEAM_ID" != "$APPLE_TEAM_ID" ]; then
+              echo "::error::$LABEL's Team ID ($PROFILE_TEAM_ID) doesn't match your APPLE_TEAM_ID secret ($APPLE_TEAM_ID). Find your real Team ID at developer.apple.com/account under Membership."
+              FAILED=1
+            fi
+
+            if [ -z "$PROFILE_BUNDLE_ID" ]; then
+              echo "::warning::Couldn't read a bundle ID out of $LABEL - skipping that check."
+            elif [ "$PROFILE_BUNDLE_ID" != "$EXPECTED_BUNDLE_ID" ]; then
+              echo "::error::$LABEL's bundle ID ($PROFILE_BUNDLE_ID) doesn't match the expected $EXPECTED_BUNDLE_ID. Double-check this profile was created for the right App ID in SIGNING.md step 6."
+              FAILED=1
+            fi
+
+            return $FAILED
+          }
+
+          OVERALL_FAILED=0
+          check_profile "$RUNNER_TEMP/app_profile.plist" "com.citolex.app" "app.mobileprovision" || OVERALL_FAILED=1
+          check_profile "$RUNNER_TEMP/share_profile.plist" "com.citolex.app.share" "share.mobileprovision" || OVERALL_FAILED=1
+
+          if [ "$OVERALL_FAILED" = "1" ]; then
+            echo "::error::Signing setup validation failed - stopping here so you get a specific reason instead of a generic xcodebuild failure. Fix the mismatch above, then push again."
+            exit 1
+          fi
+
       - name: Archive
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
