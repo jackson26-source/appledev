@@ -8,6 +8,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Least-privilege default: this workflow only builds/signs/uploads — it never
+# needs to write back to the repo, so GITHUB_TOKEN doesn't need write access.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-15
