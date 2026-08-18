@@ -1,0 +1,14 @@
+# Signing material — generated locally per SIGNING.md, never committed.
+# GitHub Actions gets these as base64-encoded repo secrets, not files.
+*.p12
+*.key
+*.cer
+*.pem
+*.mobileprovision
+*.keystore
+*.jks
+*_base64.txt
+
+# Common local cruft
+.DS_Store
+node_modules/

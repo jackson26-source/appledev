@@ -6,6 +6,12 @@ entirely through openssl (works fine on Windows) and the Apple Developer /
 App Store Connect websites. Once it's done, every future GitHub Actions
 build reuses it automatically.
 
+**Run the commands below from a scratch folder outside your project repo**
+(e.g. your Desktop or home directory), not from inside it. Everything here
+generates real private-key material — a `.gitignore` covering these file
+types ships with this repo as a backstop, but the safest habit is to never
+let them exist inside a git working directory in the first place.
+
 ## 1. Generate a Certificate Signing Request (CSR)
 
 On Windows, in a terminal with OpenSSL available (Git Bash includes it):
