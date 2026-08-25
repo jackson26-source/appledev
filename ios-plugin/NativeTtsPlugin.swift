@@ -114,7 +114,16 @@ public class NativeTtsPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
     }
 
     @objc func pause(_ call: CAPPluginCall) {
-        synthesizer.pauseSpeaking(at: .word)
+        // AVSpeechSynthesizer.pauseSpeaking(at:) is documented but genuinely
+        // flaky right around utterance/chunk boundaries — it can return
+        // having silently done nothing, leaving audio still playing while
+        // the JS side (which doesn't wait for any confirmation here) has
+        // already flipped the icon to "paused". stopSpeaking(at:) has no
+        // such flakiness — it always actually stops. The JS "play" path
+        // never relies on true resume anyway (it always restarts a fresh
+        // utterance from the current word), so a hard stop here is exactly
+        // as resumable as a real pause would have been, just reliable.
+        synthesizer.stopSpeaking(at: .immediate)
         call.resolve()
     }
 
