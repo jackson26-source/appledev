@@ -42,6 +42,22 @@ public class NativeTtsPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
     }
 
+    // Re-asserts the .playback audio-session category right before every
+    // utterance, instead of relying on the one-time setup in load(). That
+    // one-time call is what makes TTS audible even with the phone's silent
+    // switch flipped — if it silently failed (or got superseded by anything
+    // else touching the shared AVAudioSession between load() and the first
+    // speak(), e.g. another app holding the session at launch), every
+    // utterance since would have gone out silently on whatever category the
+    // session fell back to, with no error ever surfaced. Called from speak()
+    // below; throws instead of swallowing failures so the JS side's promise
+    // actually rejects and the UI doesn't claim "playing" over dead air.
+    private func activateAudioSession() throws {
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.playback, mode: .spokenAudio, options: [.duckOthers])
+        try session.setActive(true)
+    }
+
     @objc func listVoices(_ call: CAPPluginCall) {
         let voices = AVSpeechSynthesisVoice.speechVoices().map { v -> [String: String] in
             return ["identifier": v.identifier, "name": v.name, "language": v.language]
@@ -54,7 +70,12 @@ public class NativeTtsPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
             call.reject("text is required")
             return
         }
-        try? AVAudioSession.sharedInstance().setActive(true)
+        do {
+            try activateAudioSession()
+        } catch {
+            call.reject("could not activate audio session: \(error.localizedDescription)")
+            return
+        }
 
         // AVSpeechSynthesizer does not interrupt an in-progress utterance
         // when speak() is called again — it queues the new one to play
@@ -108,6 +129,13 @@ public class NativeTtsPlugin: CAPPlugin, CAPBridgedPlugin, AVSpeechSynthesizerDe
     }
 
     // MARK: - AVSpeechSynthesizerDelegate
+
+    public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, didStart utterance: AVSpeechUtterance) {
+        // Lets the JS side only flip the play/pause icon to "playing" once
+        // speech has actually, confirmedly started — see the matching JS
+        // change in startSpeakingNative()/playBtn's click handler.
+        notifyListeners("start", data: [:])
+    }
 
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer, willSpeakRangeOfSpeechString characterRange: NSRange, utterance: AVSpeechUtterance) {
         notifyListeners("boundary", data: ["charIndex": characterRange.location])
