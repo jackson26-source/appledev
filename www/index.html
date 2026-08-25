@@ -584,7 +584,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19 2 12l9-7v14z"></path><path d="M22 19 13 12l9-7v14z"></path></svg>
     </button>
     <button class="play-btn" id="playBtn" title="Play/Pause" aria-label="Play or pause">
-      <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+      <svg viewBox="0 0 24 24" fill="currentColor"><path id="playIcon" d="M8 5v14l11-7z"></path></svg>
     </button>
     <button class="icon-btn" id="forwardBtn" title="Forward 10 words" aria-label="Forward 10 words">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m13 5 9 7-9 7V5z"></path><path d="m2 5 9 7-9 7V5z"></path></svg>
@@ -961,14 +961,29 @@
   /* ---- text-to-speech playback (native) ---- */
   let nativeBoundaryListener = null;
   let nativeFinishListener = null;
+  let nativeStartListener = null;
+
+  // AVSpeechSynthesizer is unreliable (silently produces no audio, or just
+  // never fires its delegate callbacks) once a single AVSpeechUtterance gets
+  // into the tens-of-thousands-of-characters range. words.slice(baseIdx)
+  // joined into one string is fine for a pasted paragraph, but an .epub
+  // chapter (or a whole book, since Restart/seek can put baseIdx near 0)
+  // easily runs past that — which is exactly the "TTS plays nothing, ever"
+  // report that only showed up on epub content, not short text. Split into
+  // fixed-size word chunks and feed them to the native side one at a time,
+  // advancing to the next chunk on its own 'finish' event, so no single
+  // utterance is ever more than CHUNK_WORDS words long.
+  const TTS_CHUNK_WORDS = 400;
+
   async function startSpeakingNative(){
     const baseIdx = idx;
     const remaining = words.slice(baseIdx);
     if (remaining.length === 0) return;
-    const text = remaining.join(' ');
-    const offsets = [];
-    let pos = 0;
-    remaining.forEach(w => { offsets.push(pos); pos += w.length + 1; });
+
+    const chunks = [];
+    for (let i = 0; i < remaining.length; i += TTS_CHUNK_WORDS) {
+      chunks.push(remaining.slice(i, i + TTS_CHUNK_WORDS));
+    }
 
     // Stop whatever's currently speaking before starting the next utterance.
     // AVSpeechSynthesizer does NOT interrupt an in-progress utterance when
@@ -984,18 +999,67 @@
 
     if (nativeBoundaryListener) { nativeBoundaryListener.remove(); nativeBoundaryListener = null; }
     if (nativeFinishListener) { nativeFinishListener.remove(); nativeFinishListener = null; }
+    if (nativeStartListener) { nativeStartListener.remove(); nativeStartListener = null; }
+
+    let chunkIdx = 0;
+    let chunkBaseWordIdx = baseIdx;
+    let chunkOffsets = [];
+
+    function offsetsFor(chunkWords){
+      const offs = [];
+      let pos = 0;
+      chunkWords.forEach(w => { offs.push(pos); pos += w.length + 1; });
+      return offs;
+    }
+
+    const voiceId = voiceSelect.value && nativeVoices[parseInt(voiceSelect.value, 10)]
+      ? nativeVoices[parseInt(voiceSelect.value, 10)].identifier
+      : undefined;
+    const wpm = getWpm();
+    const rateMul = parseFloat(rateSlider.value);
+
+    function speakChunk(){
+      chunkOffsets = offsetsFor(chunks[chunkIdx]);
+      const text = chunks[chunkIdx].join(' ');
+      // AVSpeechSynthesizer's rate tops out at 1.0 (roughly 2x its own "normal"
+      // pace of 0.5) — a much lower ceiling than the web Speech API's, which
+      // goes up to 10x. Dividing by the same baseline (180) the web path uses
+      // meant the app's own *default* WPM (420) already exceeded that ceiling,
+      // so native read-aloud was pinned at max speed from the very first play,
+      // not scaling up gradually. Using a higher baseline (300) means the
+      // default and most of the slider's range map to an audibly natural
+      // scaling instead of instantly maxing out; only the very fastest settings
+      // (600+ wpm) still hit the hardware ceiling, which is unavoidable.
+      NativeTts.speak({ text, rate: (wpm / 300) * rateMul, voiceId }).catch(() => { setPlayingUI(false); });
+    }
+
+    nativeStartListener = await NativeTts.addListener('start', () => {
+      // Only trust the UI to say "playing" once native actually confirms an
+      // utterance began — previously this was set optimistically the moment
+      // speak() was called, so if native silently failed to produce any
+      // audio (e.g. an oversized utterance, or an audio-session hiccup) the
+      // app was stuck showing "playing" forever with nothing audible, and
+      // the play/pause button stopped doing anything useful from then on.
+      setPlayingUI(true);
+    });
 
     nativeBoundaryListener = await NativeTts.addListener('boundary', (e) => {
       let wi = 0;
-      for (let i = 0; i < offsets.length; i++) {
-        if (offsets[i] <= e.charIndex) wi = i; else break;
+      for (let i = 0; i < chunkOffsets.length; i++) {
+        if (chunkOffsets[i] <= e.charIndex) wi = i; else break;
       }
-      idx = baseIdx + wi;
+      idx = chunkBaseWordIdx + wi;
       if (syncToggle.checked) renderWord(words[idx]);
       updateStats();
     });
     nativeFinishListener = await NativeTts.addListener('finish', () => {
       if (!playing) return;
+      chunkIdx++;
+      if (chunkIdx < chunks.length) {
+        chunkBaseWordIdx += chunks[chunkIdx - 1].length;
+        speakChunk();
+        return;
+      }
       if (loopToggle.checked && words.length > 0) {
         recordCompletion();
         idx = 0;
@@ -1008,21 +1072,7 @@
       recordCompletion();
     });
 
-    const voiceId = voiceSelect.value && nativeVoices[parseInt(voiceSelect.value, 10)]
-      ? nativeVoices[parseInt(voiceSelect.value, 10)].identifier
-      : undefined;
-    const wpm = getWpm();
-    const rateMul = parseFloat(rateSlider.value);
-    // AVSpeechSynthesizer's rate tops out at 1.0 (roughly 2x its own "normal"
-    // pace of 0.5) — a much lower ceiling than the web Speech API's, which
-    // goes up to 10x. Dividing by the same baseline (180) the web path uses
-    // meant the app's own *default* WPM (420) already exceeded that ceiling,
-    // so native read-aloud was pinned at max speed from the very first play,
-    // not scaling up gradually. Using a higher baseline (300) means the
-    // default and most of the slider's range map to an audibly natural
-    // scaling instead of instantly maxing out; only the very fastest settings
-    // (600+ wpm) still hit the hardware ceiling, which is unavoidable.
-    NativeTts.speak({ text, rate: (wpm / 300) * rateMul, voiceId }).catch(() => { setPlayingUI(false); });
+    speakChunk();
   }
 
   /* ---- text-to-speech playback (web) ---- */
@@ -1082,19 +1132,26 @@
         if (isNativeApp && NativeTts) {
           if (idx >= words.length) idx = 0;
           startSpeaking();
+          // No setPlayingUI(true) here — the native 'start' listener (see
+          // startSpeakingNative) flips the icon once native actually
+          // confirms an utterance began speaking, instead of assuming it
+          // worked the instant the call was made. Previously this was set
+          // unconditionally right here, so if native silently produced no
+          // audio the icon still flipped to "playing" and got stuck there,
+          // making every later tap look like it only ever paused.
         } else if (speechSynthesis.paused) {
           speechSynthesis.resume();
+          setPlayingUI(true);
         } else {
           if (idx >= words.length) idx = 0;
           startSpeaking();
+          setPlayingUI(true);
         }
       } else {
         if (idx >= words.length) idx = 0;
         setPlayingUI(true);
         tick();
-        return;
       }
-      setPlayingUI(true);
     } else {
       setPlayingUI(false);
       if (ttsToggle.checked && ttsSupported) {
