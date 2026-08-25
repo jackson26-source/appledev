@@ -209,5 +209,23 @@ jobs:
           mkdir -p ~/.appstoreconnect/private_keys
           echo "$API_PRIVATE_KEY_BASE64" | base64 --decode > "$HOME/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8"
           IPA_PATH=$(find "$RUNNER_TEMP/export" -name "*.ipa" | head -n 1)
-          xcrun altool --upload-app -f "$IPA_PATH" -t ios \
-            --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID"
+
+          # altool has a real, documented quirk: it can exit 0 even when Apple's
+          # own server-side validation rejects the binary (e.g. a version-number
+          # conflict) — the failure only shows up in its own printed output, not
+          # its exit code. That let a real rejection here read as a green
+          # checkmark for hours on 2026-08-25 (build stuck at "1.0" after that
+          # version had already gone Ready for Distribution). Belt-and-suspenders:
+          # capture the output, print it either way, and explicitly fail the step
+          # if altool's own text says the bundle was rejected, regardless of its
+          # exit code.
+          set +e
+          UPLOAD_OUTPUT=$(xcrun altool --upload-app -f "$IPA_PATH" -t ios \
+            --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID" 2>&1)
+          UPLOAD_EXIT=$?
+          set -e
+          echo "$UPLOAD_OUTPUT"
+          if [ $UPLOAD_EXIT -ne 0 ] || echo "$UPLOAD_OUTPUT" | grep -qiE "validation failed|this bundle is invalid|nsunderlyingerror"; then
+            echo "::error::altool reported a real upload/validation failure (exit $UPLOAD_EXIT) — see output above. Failing this step instead of silently continuing."
+            exit 1
+          fi
