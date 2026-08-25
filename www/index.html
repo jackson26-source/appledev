@@ -1185,7 +1185,15 @@
   ttsToggle.addEventListener('change', () => {
     const wasPlaying = playing;
     stopAll();
-    if (wasPlaying) playBtn.click();
+    // Only auto-continue when the toggle was just switched ON mid-session
+    // (add voice to a reading that was already running). Previously this
+    // fired for BOTH directions, so switching the toggle OFF while reading
+    // was in progress stopped the voice via stopAll() above and then
+    // immediately restarted playback in silent flash mode via the click
+    // below — the toggle's switch UI showed "off" but words kept flashing,
+    // which reads as "the volume button doesn't turn off." Turning it off
+    // now genuinely stops, matching what the switch shows.
+    if (wasPlaying && ttsToggle.checked) playBtn.click();
   });
 
   wpmSlider.addEventListener('input', () => {
