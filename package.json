@@ -1,6 +1,6 @@
 {
   "name": "citolex-app",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Citolex speed-reading app — Capacitor iOS shell around the citolex.com web app",
   "private": true,
   "scripts": {
