@@ -40,6 +40,24 @@ APPLE_TEAM_ID = ENV.fetch('APPLE_TEAM_ID', '8N6W89UUA5')
 # every push produces an installable build.
 BUILD_NUMBER = ENV.fetch('BUILD_NUMBER', '1')
 
+# MARKETING_VERSION (CFBundleShortVersionString, e.g. "1.1.0") is the OTHER
+# half of that uniqueness pair, and until 2026-08-25 nothing here ever set
+# it — `npx cap add ios` regenerates the Xcode project from Capacitor's
+# template every run, and its default MARKETING_VERSION ("1.0") was never
+# overridden, so every build stayed "1.0" forever regardless of BUILD_NUMBER
+# or package.json's own version field. That's harmless right up until the
+# "1.0" App Store version actually goes Ready for Distribution — at which
+# point Apple closes that version's TestFlight "pre-release train" entirely,
+# and altool starts rejecting every future upload with "Invalid Pre-Release
+# Train... closed for new build submissions" while still exiting 0, so it
+# read as a green checkmark in CI for hours before anyone noticed. Reading
+# package.json here keeps one single source of truth for the app's version —
+# bump package.json's "version" and both the CI-visible number and the
+# actual binary agree.
+require 'json'
+PACKAGE_JSON_PATH = File.join(ROOT, 'package.json')
+APP_VERSION = JSON.parse(File.read(PACKAGE_JSON_PATH)).fetch('version', '1.0.0')
+
 abort "Xcode project not found at #{PROJECT_PATH} — run `npx cap add ios` first." unless File.exist?(PROJECT_PATH)
 
 project = Xcodeproj::Project.open(PROJECT_PATH)
@@ -86,6 +104,7 @@ app_target.build_configurations.each do |config|
   config.build_settings['DEVELOPMENT_TEAM'] = APPLE_TEAM_ID
   config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'Citolex App Store'
   config.build_settings['CURRENT_PROJECT_VERSION'] = BUILD_NUMBER
+  config.build_settings['MARKETING_VERSION'] = APP_VERSION
 end
 
 info_plist_path = File.join(app_src_dir, 'Info.plist')
@@ -137,6 +156,7 @@ share_target.build_configurations.each do |config|
   config.build_settings['DEVELOPMENT_TEAM'] = APPLE_TEAM_ID
   config.build_settings['PROVISIONING_PROFILE_SPECIFIER'] = 'Citolex Share App Store'
   config.build_settings['CURRENT_PROJECT_VERSION'] = BUILD_NUMBER
+  config.build_settings['MARKETING_VERSION'] = APP_VERSION
 end
 
 # Also record manual signing + team in the project's TargetAttributes, which
