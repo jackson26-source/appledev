@@ -8,9 +8,6 @@ import AVFoundation
  * Drop-in replacement for the browser's `speechSynthesis` API, backed by
  * AVSpeechSynthesizer. Advantages over the web TTS Citolex uses today:
  *   - Works fully offline (no network round-trip for the voice)
- *   - Can keep speaking with the screen locked / app backgrounded, as long
- *     as the "Audio, AirPlay, and Picture in Picture" background mode is
- *     enabled on the app target (see SETUP.md)
  *   - Access to every voice installed on the device, including the higher
  *     quality "Enhanced"/"Premium" voices users may have downloaded in
  *     Settings > Accessibility > Spoken Content > Voices
