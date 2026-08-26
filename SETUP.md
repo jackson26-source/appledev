@@ -121,9 +121,11 @@ push code — including code you edit right here on Windows.
    `+ Capability` → *App Groups* → add `group.com.citolex.app`. Repeat the
    same for the `CitolexShare` extension target, adding the **same** group ID.
 
-7. **Turn on Background Audio** (so read-aloud can keep playing with the
-   screen locked). `App` target → *Signing & Capabilities* → `+ Capability` →
-   *Background Modes* → check *Audio, AirPlay, and Picture in Picture*.
+7. **Leave Background Modes off.** Read-aloud is meant to stop when the app
+   is backgrounded or the screen locks — don't add the *Audio, AirPlay, and
+   Picture in Picture* background mode under *Signing & Capabilities*. (The
+   CI pipeline actively strips this key from `Info.plist` even if a future
+   Capacitor template starts setting it — see `scripts/configure_ios_project.rb`.)
 
 8. **Set your Bundle ID and signing team.** `App` target → *Signing &
    Capabilities* → set your Team (your Apple Developer account) and confirm
@@ -131,10 +133,11 @@ push code — including code you edit right here on Windows.
    (defaults to `com.citolex.app` — change it in `capacitor.config.json`
    first if you want something else, then re-run `npx cap sync ios`).
 
-9. **Swap in the real app icon.** Open `Assets.xcassets/AppIcon` in Xcode and
-   drop in `AppIcon/icon-1024.png` from this repo (Xcode will generate the
-   other sizes for you). This is a placeholder using your existing brand
-   colors — replace it with real artwork whenever you want.
+9. **App icon.** `AppIcon/icon-1024.png` in this repo is the real logo, and
+   the CI pipeline already copies it into every icon slot on every build —
+   nothing to do by hand. If you're doing a one-off manual Archive (step 11
+   below) instead of a CI build, open `Assets.xcassets/AppIcon` in Xcode and
+   drop it in yourself (Xcode will generate the other sizes for you).
 
 10. **Link Xcode Cloud.** Product menu → *Xcode Cloud* → *Create Workflow*.
     Follow the prompts to connect your GitHub repo and your App Store Connect
@@ -163,7 +166,7 @@ ios-share-extension/               The "Read in Citolex" share sheet extension
 scripts/configure_ios_project.rb  Scripts the Share Extension target + entitlements into the Xcode project
 .github/workflows/ios-testflight.yml  The free GitHub Actions build/sign/upload pipeline
 SIGNING.md                        Headless (no-Xcode) signing setup, step by step
-AppIcon/icon-1024.png             Placeholder app icon (brand gradient + "C" mark)
+AppIcon/icon-1024.png             App icon, applied to every build by CI
 ```
 
 ## Cost summary
