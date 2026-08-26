@@ -11,8 +11,10 @@
 #      and embeds it into the main app.
 #   3. Turns on the App Group entitlement (group.com.citolex.app) on both
 #      targets, so they can hand text to each other.
-#   4. Turns on the Background Modes > Audio capability on the main app,
-#      so native read-aloud can keep playing with the screen locked.
+#
+# Background audio (Background Modes > Audio) is deliberately NOT enabled
+# here — see the note above the Info.plist block below. Read-aloud stops
+# when the app is backgrounded/screen-locked, by design.
 #
 # Requires the `xcodeproj` gem, which ships already installed alongside
 # CocoaPods on GitHub's macOS runners — no extra install step needed.
@@ -107,14 +109,25 @@ app_target.build_configurations.each do |config|
   config.build_settings['MARKETING_VERSION'] = APP_VERSION
 end
 
+# Background audio was previously enabled here (UIBackgroundModes =
+# ['audio']) so read-aloud could keep going with the screen locked or the
+# app backgrounded. That's explicitly not wanted anymore — the app should
+# stop playing as soon as it's backgrounded — so this now actively removes
+# the key instead of setting it, in case an older cached/regenerated
+# Info.plist (or a future Capacitor template) already has it set. Without
+# this entitlement, iOS suspends the app's audio session on background the
+# same way it would for any other non-audio app, which is what we want.
 info_plist_path = File.join(app_src_dir, 'Info.plist')
 if File.exist?(info_plist_path)
   plist = Xcodeproj::Plist.read_from_path(info_plist_path)
-  plist['UIBackgroundModes'] = ['audio']
+  if plist.delete('UIBackgroundModes')
+    puts 'Removed UIBackgroundModes from Info.plist (background audio disabled)'
+  else
+    puts 'UIBackgroundModes already absent from Info.plist — background audio stays disabled'
+  end
   Xcodeproj::Plist.write_to_path(plist, info_plist_path)
-  puts 'Enabled Background Audio mode on Info.plist'
 else
-  warn "Warning: #{info_plist_path} not found — set UIBackgroundModes manually in Xcode if this script's Info.plist path guess was wrong."
+  warn "Warning: #{info_plist_path} not found — background audio should stay disabled by default (Capacitor's template doesn't set UIBackgroundModes), but worth confirming in Xcode if this script's Info.plist path guess was wrong."
 end
 
 # ---------------------------------------------------------------------------
