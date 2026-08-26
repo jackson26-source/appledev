@@ -738,6 +738,22 @@
   let fileTextContent = '';
   let urlFetchedText = '';
 
+  // ttsGen: bumped on every playback-engine transition (play, pause, stop,
+  // seek, a mid-session engine swap, a rate/voice/wpm change while playing).
+  // Each async native-TTS start chain in startSpeakingNative() captures the
+  // value at its own start and checks it after every await, aborting
+  // cleanly if a newer transition has since superseded it. nativeStartPending
+  // is true from the moment a native speak() is requested until the native
+  // side confirms it actually began (or fails) — playBtn's click handler
+  // uses it to ignore re-taps that land in that brief async gap, instead of
+  // letting each one spawn its own overlapping start. Together these are
+  // what "click it 20 times and it breaks" turned out to be: without them,
+  // every rapid tap before `playing` flipped true kicked off another async
+  // chain, and they all raced to register/overwrite the same shared
+  // listener variables.
+  let ttsGen = 0;
+  let nativeStartPending = false;
+
   /* ---- native app bridge (no-ops / falls through cleanly on the plain web
      version at citolex.com — only active when running inside the Capacitor
      iOS shell, where window.Capacitor is injected automatically) ----
@@ -912,6 +928,8 @@
   }
 
   function stopAll(){
+    ttsGen++;
+    nativeStartPending = false;
     clearTimeout(timer);
     if (isNativeApp && NativeTts) { NativeTts.stop().catch(()=>{}); }
     else if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e){} }
@@ -976,9 +994,17 @@
   const TTS_CHUNK_WORDS = 400;
 
   async function startSpeakingNative(){
+    // See the ttsGen/nativeStartPending comment near their declaration —
+    // this generation token is what lets a stale, still-in-flight call
+    // (from a rapid double-tap, a fast pause-then-play, or a mode swap
+    // that landed mid-await) discover it's obsolete and bail out cleanly
+    // instead of stomping on whichever call is actually meant to win.
+    const myGen = ++ttsGen;
+    nativeStartPending = true;
+
     const baseIdx = idx;
     const remaining = words.slice(baseIdx);
-    if (remaining.length === 0) return;
+    if (remaining.length === 0) { nativeStartPending = false; return; }
 
     const chunks = [];
     for (let i = 0; i < remaining.length; i += TTS_CHUNK_WORDS) {
@@ -996,6 +1022,7 @@
     // play button stopped doing anything useful. speechSynthesis.cancel()
     // already did this on the web path (below) — native needs the same.
     try { await NativeTts.stop(); } catch (e) {}
+    if (myGen !== ttsGen) { nativeStartPending = false; return; }
 
     if (nativeBoundaryListener) { nativeBoundaryListener.remove(); nativeBoundaryListener = null; }
     if (nativeFinishListener) { nativeFinishListener.remove(); nativeFinishListener = null; }
@@ -1030,10 +1057,14 @@
       // default and most of the slider's range map to an audibly natural
       // scaling instead of instantly maxing out; only the very fastest settings
       // (600+ wpm) still hit the hardware ceiling, which is unavoidable.
-      NativeTts.speak({ text, rate: (wpm / 300) * rateMul, voiceId }).catch(() => { setPlayingUI(false); });
+      NativeTts.speak({ text, rate: (wpm / 300) * rateMul, voiceId }).catch(() => {
+        if (myGen === ttsGen) setPlayingUI(false);
+        nativeStartPending = false;
+      });
     }
 
-    nativeStartListener = await NativeTts.addListener('start', () => {
+    const startListener = await NativeTts.addListener('start', () => {
+      if (myGen !== ttsGen) return;
       // Only trust the UI to say "playing" once native actually confirms an
       // utterance began — previously this was set optimistically the moment
       // speak() was called, so if native silently failed to produce any
@@ -1041,9 +1072,10 @@
       // app was stuck showing "playing" forever with nothing audible, and
       // the play/pause button stopped doing anything useful from then on.
       setPlayingUI(true);
+      nativeStartPending = false;
     });
-
-    nativeBoundaryListener = await NativeTts.addListener('boundary', (e) => {
+    const boundaryListener = await NativeTts.addListener('boundary', (e) => {
+      if (myGen !== ttsGen) return;
       let wi = 0;
       for (let i = 0; i < chunkOffsets.length; i++) {
         if (chunkOffsets[i] <= e.charIndex) wi = i; else break;
@@ -1052,7 +1084,8 @@
       if (syncToggle.checked) renderWord(words[idx]);
       updateStats();
     });
-    nativeFinishListener = await NativeTts.addListener('finish', () => {
+    const finishListener = await NativeTts.addListener('finish', () => {
+      if (myGen !== ttsGen) return;
       if (!playing) return;
       chunkIdx++;
       if (chunkIdx < chunks.length) {
@@ -1071,6 +1104,21 @@
       updateStats();
       recordCompletion();
     });
+
+    if (myGen !== ttsGen) {
+      // Superseded while the listeners above were being registered — tear
+      // down what we just added instead of leaving it live to fire later,
+      // and let whichever newer call is now current keep going undisturbed.
+      startListener.remove();
+      boundaryListener.remove();
+      finishListener.remove();
+      nativeStartPending = false;
+      return;
+    }
+
+    nativeStartListener = startListener;
+    nativeBoundaryListener = boundaryListener;
+    nativeFinishListener = finishListener;
 
     speakChunk();
   }
@@ -1124,9 +1172,28 @@
     speechSynthesis.speak(utter);
   }
 
-  /* ---- transport ---- */
+  /* ---- transport ----
+     playBtn ONLY ever starts/stops/pauses the reading session — it never
+     reads or writes ttsToggle.checked beyond checking it as a mode setting
+     ("should this session be voiced or silent"), and it never calls the
+     toggle or ttsQuickBtn. ttsToggle's own handler (below) mirrors this:
+     it only ever swaps which engine is rendering an already-playing
+     session, and never touches `playing` or the play/pause icon. That's
+     the actual fix for "those two buttons are separate, neither should
+     control the other" — previously ttsToggle's handler called
+     playBtn.click() to resume playback itself, which is exactly the kind
+     of cross-control that's no longer here. */
   playBtn.addEventListener('click', () => {
     if (words.length === 0) return;
+    // While a native TTS start is in flight (the brief async gap between
+    // requesting speech and the native side confirming it actually began),
+    // `playing` hasn't flipped true yet, so without this guard every extra
+    // tap landing in that window still read as "not playing" and fired
+    // ANOTHER start call — stacking up overlapping async chains all racing
+    // to drive the same playback state. That was "click it 20 times and it
+    // breaks the whole thing." See startSpeakingNative()'s myGen guard for
+    // the other half of this fix.
+    if (nativeStartPending) return;
     if (!playing) {
       if (ttsToggle.checked && ttsSupported) {
         if (isNativeApp && NativeTts) {
@@ -1154,6 +1221,8 @@
       }
     } else {
       setPlayingUI(false);
+      ttsGen++; // invalidate any native start/listener chain still wiring itself up
+      nativeStartPending = false;
       if (ttsToggle.checked && ttsSupported) {
         if (isNativeApp && NativeTts) { NativeTts.pause().catch(()=>{}); }
         else { try { speechSynthesis.pause(); } catch(e){} }
@@ -1167,42 +1236,71 @@
     if (words.length === 0) return;
     newIdx = Math.max(0, Math.min(words.length - 1, newIdx));
     const wasPlaying = playing;
+    ttsGen++;
+    nativeStartPending = false;
     clearTimeout(timer);
-    if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e){} }
+    if (isNativeApp && NativeTts) { NativeTts.stop().catch(()=>{}); }
+    else if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e){} }
     idx = newIdx;
     renderWord(words[idx]);
     updateStats();
     if (wasPlaying) {
       setPlayingUI(true);
-      if (ttsToggle.checked && ttsSupported) startSpeaking();
-      else tick();
+      if (ttsToggle.checked && ttsSupported) {
+        if (isNativeApp && NativeTts) nativeStartPending = true;
+        startSpeaking();
+      } else {
+        tick();
+      }
     }
   }
   restartBtn.addEventListener('click', () => seekTo(0));
   backBtn.addEventListener('click', () => seekTo(idx - 10));
   forwardBtn.addEventListener('click', () => seekTo(idx + 10));
 
+  // ttsToggle (the "read aloud" switch, and ttsQuickBtn which just flips it)
+  // only ever chooses which engine renders the CURRENT reading session —
+  // native/web speech, or the silent flash-word timer. It must never start
+  // or stop the session itself. If nothing is playing, flipping it just
+  // changes what the next play tap will do. If a session IS playing, this
+  // hot-swaps the engine underneath it — stop whatever's currently
+  // producing words, then resume producing them the new way from the same
+  // spot — without ever touching `playing` or flipping the play/pause icon
+  // off. That's the fix for "the volume should never control the pause
+  // play": previously this handler called stopAll() (which does flip the
+  // icon) and then, for one direction, playBtn.click() — real cross-control
+  // between the two buttons, not just a visual glitch.
   ttsToggle.addEventListener('change', () => {
-    const wasPlaying = playing;
-    stopAll();
-    // Only auto-continue when the toggle was just switched ON mid-session
-    // (add voice to a reading that was already running). Previously this
-    // fired for BOTH directions, so switching the toggle OFF while reading
-    // was in progress stopped the voice via stopAll() above and then
-    // immediately restarted playback in silent flash mode via the click
-    // below — the toggle's switch UI showed "off" but words kept flashing,
-    // which reads as "the volume button doesn't turn off." Turning it off
-    // now genuinely stops, matching what the switch shows.
-    if (wasPlaying && ttsToggle.checked) playBtn.click();
+    if (!playing) return;
+    ttsGen++;
+    nativeStartPending = false;
+    clearTimeout(timer);
+    if (isNativeApp && NativeTts) { NativeTts.stop().catch(()=>{}); }
+    else if (ttsSupported) { try { speechSynthesis.cancel(); } catch(e){} }
+    if (ttsToggle.checked && ttsSupported) {
+      if (isNativeApp && NativeTts) nativeStartPending = true;
+      startSpeaking();
+    } else {
+      tick();
+    }
   });
+
+  // Shared by the wpm/rate/voice controls below: if a voiced session is
+  // already playing, re-issue it from the current word at the new
+  // setting. Routed through the same nativeStartPending flag playBtn uses
+  // so a slider change and a play/pause tap can never both think they're
+  // the one driving playback at once.
+  function restartTtsIfPlaying(){
+    if (!(playing && ttsToggle.checked && ttsSupported)) return;
+    if (isNativeApp && NativeTts) nativeStartPending = true;
+    startSpeaking();
+  }
 
   wpmSlider.addEventListener('input', () => {
     wpmVal.value = wpmSlider.value;
     updateStats();
   });
-  wpmSlider.addEventListener('change', () => {
-    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
-  });
+  wpmSlider.addEventListener('change', restartTtsIfPlaying);
 
   wpmVal.addEventListener('input', () => {
     const v = parseInt(wpmVal.value, 10);
@@ -1214,7 +1312,7 @@
     wpmVal.value = v;
     wpmSlider.value = v;
     updateStats();
-    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
+    restartTtsIfPlaying();
   }
   wpmVal.addEventListener('change', commitWpmInput);
   wpmVal.addEventListener('keydown', (e) => { if (e.key === 'Enter') wpmVal.blur(); });
@@ -1305,13 +1403,9 @@
   rateSlider.addEventListener('input', () => {
     rateVal.textContent = parseFloat(rateSlider.value).toFixed(1) + '×';
   });
-  rateSlider.addEventListener('change', () => {
-    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
-  });
+  rateSlider.addEventListener('change', restartTtsIfPlaying);
 
-  voiceSelect.addEventListener('change', () => {
-    if (playing && ttsToggle.checked && ttsSupported) startSpeaking();
-  });
+  voiceSelect.addEventListener('change', restartTtsIfPlaying);
 
   /* ---- voices ---- */
   async function populateNativeVoices(){
