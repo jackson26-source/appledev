@@ -48,7 +48,7 @@ jobs:
       - name: Install Ruby gems for project scripting
         run: gem install xcodeproj --no-document
 
-      - name: Wire in native TTS, Share Extension, App Group, background audio
+      - name: Wire in native TTS, Share Extension, App Group
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           BUILD_NUMBER: ${{ github.run_number }}
