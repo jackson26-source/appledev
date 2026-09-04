@@ -12,6 +12,24 @@
      less like the generic violet-gradient "AI SaaS" look this started with.
      Violet is still available as a selectable theme, just no longer default. */
   :root{
+    /* Fine dither-noise tile, blended with `overlay` under every dark
+       background gradient below. The corner "glow" gradients are a huge,
+       very low-contrast radial fade (barely-there color down to fully
+       transparent) sitting over a near-black base — exactly the shape that
+       makes WKWebView's gradient rasterizer band visibly on a real screen
+       (confirmed by pulling the raw pixels from a device screenshot: large
+       flat-color terraces with hard edges, not a smooth ramp). More gradient
+       stops don't fix this — the final composite is still quantized to 8
+       bits per channel regardless of how the CSS curve is authored. A
+       barely-perceptible grain texture is the standard fix for this
+       everywhere it comes up (Linear, Arc, Stripe's dark UI, etc. all do
+       it): it breaks the flat 8-bit terraces up into fine, even texture
+       that reads as "smooth" to the eye instead of "banded." 80x80 tile,
+       generated once from a tight Gaussian around neutral gray so `overlay`
+       barely nudges any pixel — it's a fix for banding, not a grain effect
+       layered on top of one.
+    */
+    --grain: url("data:image/png;base64,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");
     --bg: #070f0c;
     --bg-alt: #0b1512;
     --panel: #101c17;
@@ -86,9 +104,15 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   html, body{ height:100%; }
   body{
-    background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
-                radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%),
-                var(--bg);
+    /* See --grain's comment at :root for why this isn't just the two
+       radial-gradients + solid color it looks like — the grain layer on
+       top (blended via `overlay`) is what keeps this from banding. */
+    background-image: var(--grain),
+                radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
+                radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%);
+    background-color: var(--bg);
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-blend-mode: overlay, normal, normal;
     color: var(--text);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.5;
@@ -377,9 +401,12 @@
      as a seamless continuation of the page instead of a different surface. */
   .focus-overlay{
     position:fixed; inset:0; z-index:1000;
-    background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
-                radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%),
-                var(--bg);
+    background-image: var(--grain),
+                radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%),
+                radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%);
+    background-color: var(--bg);
+    background-repeat: repeat, no-repeat, no-repeat;
+    background-blend-mode: overlay, normal, normal;
     display:none; align-items:center; justify-content:center; flex-direction:column;
     cursor:pointer;
     /* Pull-down-to-exit gesture: follows the finger with no transition while
@@ -389,9 +416,9 @@
   }
   .focus-overlay.active{ display:flex; }
   .focus-overlay.dragging{ transition:none; }
-  .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
-  .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
-  .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background: radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%), var(--bg) !important; }
+  .focus-overlay:fullscreen{ width:100% !important; height:100% !important; background-image: var(--grain), radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%) !important; background-color: var(--bg) !important; background-repeat: repeat, no-repeat, no-repeat !important; background-blend-mode: overlay, normal, normal !important; }
+  .focus-overlay:-webkit-full-screen{ width:100% !important; height:100% !important; background-image: var(--grain), radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%) !important; background-color: var(--bg) !important; background-repeat: repeat, no-repeat, no-repeat !important; background-blend-mode: overlay, normal, normal !important; }
+  .focus-overlay:-ms-fullscreen{ width:100% !important; height:100% !important; background-image: var(--grain), radial-gradient(1200px 600px at 15% -10%, var(--glow-1), transparent 60%), radial-gradient(1000px 500px at 100% 0%, var(--glow-2), transparent 55%) !important; background-color: var(--bg) !important; background-repeat: repeat, no-repeat, no-repeat !important; background-blend-mode: overlay, normal, normal !important; }
   .focus-overlay::backdrop{ background: var(--bg) !important; }
   html:fullscreen, body:fullscreen{ background: var(--bg) !important; }
   html:-webkit-full-screen, body:-webkit-full-screen{ background: var(--bg) !important; }
@@ -1362,6 +1389,7 @@
     const glow1 = cs.getPropertyValue('--glow-1').trim();
     const glow2 = cs.getPropertyValue('--glow-2').trim();
     const bg = cs.getPropertyValue('--bg').trim();
+    const grain = cs.getPropertyValue('--grain').trim();
     const accent = cs.getPropertyValue('--accent').trim();
     const text = cs.getPropertyValue('--text').trim();
     // Only the overlay itself gets the inline background — NOT
@@ -1372,10 +1400,18 @@
     // fullscreen. The CSS rules below (.focus-overlay:fullscreen,
     // html:fullscreen/body:fullscreen, ::backdrop) already scope this
     // correctly to only when fullscreen is actually active.
-    focusOverlay.style.background =
+    // Split into background-image/-color/-blend-mode (rather than the
+    // `background` shorthand) so the grain layer can be composited with
+    // `overlay` — see --grain's comment at :root for why it's here at all:
+    // without it this radial-gradient-over-near-black combo bands visibly
+    // on a real device screen.
+    focusOverlay.style.backgroundImage =
+      grain + ', ' +
       'radial-gradient(1200px 600px at 15% -10%, ' + glow1 + ', transparent 60%), ' +
-      'radial-gradient(1000px 500px at 100% 0%, ' + glow2 + ', transparent 55%), ' +
-      bg;
+      'radial-gradient(1000px 500px at 100% 0%, ' + glow2 + ', transparent 55%)';
+    focusOverlay.style.backgroundColor = bg;
+    focusOverlay.style.backgroundRepeat = 'repeat, no-repeat, no-repeat';
+    focusOverlay.style.backgroundBlendMode = 'overlay, normal, normal';
     focusPivotPart.style.color = accent;
     focusWordDisplay.style.color = text;
   }
