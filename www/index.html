@@ -100,6 +100,66 @@
     --orp:#ff3b30; --glow-1:rgba(255,212,0,0.12); --glow-2:rgba(0,229,255,0.08);
     --focus-bg:#111111;
   }
+  body.theme-ocean{
+    --bg:#040f12; --bg-alt:#071519; --panel:#0a1c20; --panel-2:#0e2429;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#e9fbfa; --text-dim:#84aeb0; --text-faint:#4c6d6f;
+    --accent:#17b8a6; --accent-2:#4fd9ff; --accent-ink:#03100f;
+    --accent-grad:linear-gradient(135deg,#17b8a6 0%,#2ec5c9 50%,#4fd9ff 100%);
+    --orp:#ffb454; --glow-1:rgba(23,184,166,0.13); --glow-2:rgba(79,217,255,0.07);
+    --focus-bg:#0e262b;
+  }
+  body.theme-rose{
+    --bg:#150a10; --bg-alt:#1a0d14; --panel:#20111a; --panel-2:#291621;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#fbeef4; --text-dim:#b593a3; --text-faint:#6e4f5c;
+    --accent:#f2568c; --accent-2:#ffb4c6; --accent-ink:#1a0610;
+    --accent-grad:linear-gradient(135deg,#f2568c 0%,#e0679f 50%,#ffb4c6 100%);
+    --orp:#5ee6c7; --glow-1:rgba(242,86,140,0.13); --glow-2:rgba(255,180,198,0.07);
+    --focus-bg:#2a1420;
+  }
+  body.theme-crimson{
+    --bg:#120608; --bg-alt:#17080a; --panel:#1e0c0f; --panel-2:#271014;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#fbebec; --text-dim:#b08087; --text-faint:#6e4d51;
+    --accent:#e0364a; --accent-2:#ff8a5c; --accent-ink:#160406;
+    --accent-grad:linear-gradient(135deg,#e0364a 0%,#c9254f 50%,#ff8a5c 100%);
+    --orp:#ffd166; --glow-1:rgba(224,54,74,0.14); --glow-2:rgba(255,138,92,0.07);
+    --focus-bg:#2a1013;
+  }
+  body.theme-slate{
+    --bg:#0b0d10; --bg-alt:#0f1215; --panel:#151a1e; --panel-2:#1b2126;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.15);
+    --text:#eef2f5; --text-dim:#8d99a3; --text-faint:#546069;
+    --accent:#6c93b0; --accent-2:#a8c5d6; --accent-ink:#0a0d10;
+    --accent-grad:linear-gradient(135deg,#6c93b0 0%,#8fa8bd 50%,#a8c5d6 100%);
+    --orp:#ff9d5c; --glow-1:rgba(108,147,176,0.10); --glow-2:rgba(168,197,214,0.06);
+    --focus-bg:#161c21;
+  }
+  body.theme-amber{
+    --bg:#120d07; --bg-alt:#17110a; --panel:#1e160d; --panel-2:#271c10;
+    --border:rgba(255,255,255,0.08); --border-strong:rgba(255,255,255,0.14);
+    --text:#f9efdf; --text-dim:#b09a7c; --text-faint:#6e5f4a;
+    --accent:#d99a3d; --accent-2:#ffcf7d; --accent-ink:#160f05;
+    --accent-grad:linear-gradient(135deg,#d99a3d 0%,#c9762f 50%,#ffcf7d 100%);
+    --orp:#6ec6ff; --glow-1:rgba(217,154,61,0.14); --glow-2:rgba(255,207,125,0.07);
+    --focus-bg:#241a0e;
+  }
+  /* Paper is the one light theme in the set — everything else here is dark.
+     The grain/glow layers still apply (see --grain's comment): the noise
+     tile is generated around neutral gray so `overlay` nudges pixels by the
+     same tiny amount regardless of how light or dark the base color is, and
+     the corner glows are low-alpha normal-blend tints, which read as a soft
+     warm/green wash in the corners here instead of a dark-mode glow. */
+  body.theme-paper{
+    --bg:#f6f2ea; --bg-alt:#efe8db; --panel:#fffdf9; --panel-2:#f1ebe0;
+    --border:rgba(30,22,10,0.10); --border-strong:rgba(30,22,10,0.18);
+    --text:#211a10; --text-dim:#6b5d48; --text-faint:#a89876;
+    --accent:#a3541e; --accent-2:#3f7d5a; --accent-ink:#fff8ef;
+    --accent-grad:linear-gradient(135deg,#a3541e 0%,#c47a2f 50%,#3f7d5a 100%);
+    --orp:#c81e3a; --glow-1:rgba(163,84,30,0.07); --glow-2:rgba(63,125,90,0.05);
+    --focus-bg:#fbf6ec;
+  }
 
   *{box-sizing:border-box; margin:0; padding:0;}
   html, body{ height:100%; }
@@ -535,6 +595,12 @@
           <option value="sunset">Sunset</option>
           <option value="mono">Mono</option>
           <option value="highcontrast">High Contrast</option>
+          <option value="ocean">Ocean</option>
+          <option value="rose">Rose</option>
+          <option value="crimson">Crimson</option>
+          <option value="slate">Slate</option>
+          <option value="amber">Amber</option>
+          <option value="paper">Paper (light)</option>
         </select>
       </div>
     </div>
